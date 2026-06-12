@@ -1,0 +1,1 @@
+- [Clerk version compatibility](clerk-version-compatibility.md) — @clerk/react@6.x + @clerk/shared@4.x is the only working combo; 5.x/3.x pairing breaks at runtime.

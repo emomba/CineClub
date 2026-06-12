@@ -3,20 +3,26 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: CineClub API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: users
+  - name: movies
+  - name: watchlists
+  - name: reviews
+  - name: friends
+  - name: recommendations
+  - name: notifications
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +30,1080 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Users ──────────────────────────────────────────────────────────────────
+  /users/me:
+    get:
+      operationId: getMe
+      tags: [users]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+    patch:
+      operationId: updateMe
+      tags: [users]
+      summary: Update current user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /users/{username}:
+    get:
+      operationId: getUserByUsername
+      tags: [users]
+      summary: Get user by username
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "404":
+          description: Not found
+
+  # ── Movies (TMDB proxy) ────────────────────────────────────────────────────
+  /movies/search:
+    get:
+      operationId: searchMovies
+      tags: [movies]
+      summary: Search movies via TMDB
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovieListResponse"
+
+  /movies/popular:
+    get:
+      operationId: getPopularMovies
+      tags: [movies]
+      summary: Get popular movies from TMDB
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Popular movies
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovieListResponse"
+
+  /movies/trending:
+    get:
+      operationId: getTrendingMovies
+      tags: [movies]
+      summary: Get trending movies from TMDB
+      responses:
+        "200":
+          description: Trending movies
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovieListResponse"
+
+  /movies/genre/{genreId}:
+    get:
+      operationId: getMoviesByGenre
+      tags: [movies]
+      summary: Get movies by genre from TMDB
+      parameters:
+        - name: genreId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Movies
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovieListResponse"
+
+  /movies/genres:
+    get:
+      operationId: getGenreList
+      tags: [movies]
+      summary: Get list of TMDB genres
+      responses:
+        "200":
+          description: Genre list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenreListResponse"
+
+  /movies/{tmdbId}:
+    get:
+      operationId: getMovie
+      tags: [movies]
+      summary: Get movie details from TMDB
+      parameters:
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Movie details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovieDetail"
+
+  /movies/{tmdbId}/recommendations:
+    get:
+      operationId: getMovieRecommendations
+      tags: [movies]
+      summary: Get TMDB movie recommendations
+      parameters:
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Recommendations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovieListResponse"
+
+  /movies/{tmdbId}/user-status:
+    get:
+      operationId: getMovieUserStatus
+      tags: [movies]
+      summary: Get current user's status for a movie (watchlists it belongs to, review)
+      parameters:
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovieUserStatus"
+
+  # ── Watchlists ─────────────────────────────────────────────────────────────
+  /watchlists:
+    get:
+      operationId: getWatchlists
+      tags: [watchlists]
+      summary: List current user's watchlists
+      responses:
+        "200":
+          description: Watchlists
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Watchlist"
+    post:
+      operationId: createWatchlist
+      tags: [watchlists]
+      summary: Create a watchlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WatchlistInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Watchlist"
+
+  /watchlists/{id}:
+    patch:
+      operationId: updateWatchlist
+      tags: [watchlists]
+      summary: Update watchlist name
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WatchlistUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Watchlist"
+    delete:
+      operationId: deleteWatchlist
+      tags: [watchlists]
+      summary: Delete a watchlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /watchlists/{id}/movies:
+    get:
+      operationId: getWatchlistMovies
+      tags: [watchlists]
+      summary: List movies in a watchlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Movies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WatchlistMovie"
+    post:
+      operationId: addMovieToWatchlist
+      tags: [watchlists]
+      summary: Add a movie to a watchlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WatchlistMovieInput"
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchlistMovie"
+
+  /watchlists/{id}/movies/{tmdbId}:
+    delete:
+      operationId: removeMovieFromWatchlist
+      tags: [watchlists]
+      summary: Remove a movie from a watchlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+
+  # ── Reviews ────────────────────────────────────────────────────────────────
+  /reviews:
+    post:
+      operationId: upsertReview
+      tags: [reviews]
+      summary: Create or update a review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewInput"
+      responses:
+        "200":
+          description: Review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+
+  /reviews/movie/{tmdbId}:
+    get:
+      operationId: getMovieReviews
+      tags: [reviews]
+      summary: Get all reviews for a movie
+      parameters:
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReviewWithUser"
+
+  /reviews/user/{userId}:
+    get:
+      operationId: getUserReviews
+      tags: [reviews]
+      summary: Get reviews by a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+
+  /reviews/{id}:
+    delete:
+      operationId: deleteReview
+      tags: [reviews]
+      summary: Delete a review
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Friends ────────────────────────────────────────────────────────────────
+  /friends:
+    get:
+      operationId: getFriends
+      tags: [friends]
+      summary: List accepted friends
+      responses:
+        "200":
+          description: Friends
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Friendship"
+
+  /friends/requests:
+    get:
+      operationId: getFriendRequests
+      tags: [friends]
+      summary: List pending incoming friend requests
+      responses:
+        "200":
+          description: Requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Friendship"
+
+  /friends/request:
+    post:
+      operationId: sendFriendRequest
+      tags: [friends]
+      summary: Send a friend request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FriendRequestInput"
+      responses:
+        "201":
+          description: Request sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Friendship"
+
+  /friends/{id}/accept:
+    patch:
+      operationId: acceptFriendRequest
+      tags: [friends]
+      summary: Accept a friend request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Friendship"
+
+  /friends/{id}/reject:
+    patch:
+      operationId: rejectFriendRequest
+      tags: [friends]
+      summary: Reject a friend request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Friendship"
+
+  /friends/{id}:
+    delete:
+      operationId: removeFriend
+      tags: [friends]
+      summary: Remove a friend
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+
+  /friends/movie/{tmdbId}:
+    get:
+      operationId: getFriendsWhoWatchedMovie
+      tags: [friends]
+      summary: Get friends who watched a specific movie
+      parameters:
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Friends with their ratings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FriendMovieActivity"
+
+  # ── Movie Recommendations (social) ─────────────────────────────────────────
+  /recommendations:
+    post:
+      operationId: sendRecommendation
+      tags: [recommendations]
+      summary: Send a movie recommendation to a friend
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecommendationInput"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Recommendation"
+
+  /recommendations/inbox:
+    get:
+      operationId: getRecommendationInbox
+      tags: [recommendations]
+      summary: Get incoming movie recommendations
+      responses:
+        "200":
+          description: Inbox
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecommendationWithMovie"
+
+  /recommendations/{id}/read:
+    patch:
+      operationId: markRecommendationRead
+      tags: [recommendations]
+      summary: Mark a recommendation as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Marked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Recommendation"
+
+  # ── Notifications ──────────────────────────────────────────────────────────
+  /notifications:
+    get:
+      operationId: getNotifications
+      tags: [notifications]
+      summary: List notifications for current user
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/read-all:
+    patch:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      summary: Mark all notifications as read
+      responses:
+        "200":
+          description: Done
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationResult"
+
+  /notifications/{id}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark a notification as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Done
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+  # ── Random Pick ───────────────────────────────────────────────────────────
+  /random-pick:
+    get:
+      operationId: getRandomPick
+      tags: [movies]
+      summary: Pick a random movie from watchlist or by genre
+      parameters:
+        - name: watchlistId
+          in: query
+          schema:
+            type: integer
+        - name: genreId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Random movie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovieSummary"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    OperationResult:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+
+    UserProfile:
+      type: object
+      required: [id, clerkId, username, displayName, createdAt]
+      properties:
+        id:
+          type: integer
+        clerkId:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        bio:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        watchedCount:
+          type: integer
+        reviewCount:
+          type: integer
+        friendCount:
+          type: integer
+
+    UserProfileUpdate:
+      type: object
+      properties:
+        displayName:
+          type: string
+        username:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        bio:
+          type: ["string", "null"]
+
+    Genre:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+
+    GenreListResponse:
+      type: object
+      required: [genres]
+      properties:
+        genres:
+          type: array
+          items:
+            $ref: "#/components/schemas/Genre"
+
+    MovieSummary:
+      type: object
+      required: [tmdbId, title, posterPath, releaseYear, voteAverage, popularity]
+      properties:
+        tmdbId:
+          type: integer
+        title:
+          type: string
+        posterPath:
+          type: ["string", "null"]
+        backdropPath:
+          type: ["string", "null"]
+        releaseYear:
+          type: ["integer", "null"]
+        voteAverage:
+          type: number
+        popularity:
+          type: number
+        genreIds:
+          type: array
+          items:
+            type: integer
+        overview:
+          type: string
+
+    MovieListResponse:
+      type: object
+      required: [results, totalPages, page]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/MovieSummary"
+        totalPages:
+          type: integer
+        page:
+          type: integer
+
+    CastMember:
+      type: object
+      required: [id, name, character]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        character:
+          type: string
+        profilePath:
+          type: ["string", "null"]
+
+    MovieDetail:
+      type: object
+      required: [tmdbId, title, overview, releaseYear, voteAverage, popularity, genres, runtime]
+      properties:
+        tmdbId:
+          type: integer
+        title:
+          type: string
+        overview:
+          type: string
+        posterPath:
+          type: ["string", "null"]
+        backdropPath:
+          type: ["string", "null"]
+        releaseYear:
+          type: ["integer", "null"]
+        voteAverage:
+          type: number
+        popularity:
+          type: number
+        runtime:
+          type: ["integer", "null"]
+        genres:
+          type: array
+          items:
+            $ref: "#/components/schemas/Genre"
+        cast:
+          type: array
+          items:
+            $ref: "#/components/schemas/CastMember"
+        trailerKey:
+          type: ["string", "null"]
+        dominantColor:
+          type: ["string", "null"]
+
+    MovieUserStatus:
+      type: object
+      required: [watchlistIds, hasReview]
+      properties:
+        watchlistIds:
+          type: array
+          items:
+            type: integer
+        hasReview:
+          type: boolean
+        rating:
+          type: ["number", "null"]
+
+    Watchlist:
+      type: object
+      required: [id, userId, name, isDefault, movieCount, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        name:
+          type: string
+        isDefault:
+          type: boolean
+        movieCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    WatchlistInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+
+    WatchlistUpdate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+
+    WatchlistMovie:
+      type: object
+      required: [id, watchlistId, tmdbId, title, posterPath, addedAt]
+      properties:
+        id:
+          type: integer
+        watchlistId:
+          type: integer
+        tmdbId:
+          type: integer
+        title:
+          type: string
+        posterPath:
+          type: ["string", "null"]
+        releaseYear:
+          type: ["integer", "null"]
+        voteAverage:
+          type: number
+        addedAt:
+          type: string
+          format: date-time
+
+    WatchlistMovieInput:
+      type: object
+      required: [tmdbId, title]
+      properties:
+        tmdbId:
+          type: integer
+        title:
+          type: string
+        posterPath:
+          type: ["string", "null"]
+        releaseYear:
+          type: ["integer", "null"]
+        voteAverage:
+          type: number
+
+    Review:
+      type: object
+      required: [id, userId, tmdbId, rating, content, isSpoiler, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        tmdbId:
+          type: integer
+        movieTitle:
+          type: ["string", "null"]
+        moviePosterPath:
+          type: ["string", "null"]
+        rating:
+          type: number
+        content:
+          type: string
+        isSpoiler:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    ReviewWithUser:
+      type: object
+      required: [id, userId, tmdbId, rating, content, isSpoiler, createdAt, user]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        tmdbId:
+          type: integer
+        rating:
+          type: number
+        content:
+          type: string
+        isSpoiler:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        user:
+          $ref: "#/components/schemas/UserProfile"
+
+    ReviewInput:
+      type: object
+      required: [tmdbId, rating, content, isSpoiler]
+      properties:
+        tmdbId:
+          type: integer
+        movieTitle:
+          type: string
+        moviePosterPath:
+          type: ["string", "null"]
+        rating:
+          type: number
+        content:
+          type: string
+        isSpoiler:
+          type: boolean
+
+    Friendship:
+      type: object
+      required: [id, requesterId, receiverId, status, createdAt]
+      properties:
+        id:
+          type: integer
+        requesterId:
+          type: string
+        receiverId:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        otherUser:
+          $ref: "#/components/schemas/UserProfile"
+
+    FriendRequestInput:
+      type: object
+      required: [targetUsername]
+      properties:
+        targetUsername:
+          type: string
+
+    FriendMovieActivity:
+      type: object
+      required: [user, rating]
+      properties:
+        user:
+          $ref: "#/components/schemas/UserProfile"
+        rating:
+          type: ["number", "null"]
+        review:
+          type: ["string", "null"]
+        isSpoiler:
+          type: boolean
+
+    Recommendation:
+      type: object
+      required: [id, fromUserId, toUserId, tmdbId, seen, createdAt]
+      properties:
+        id:
+          type: integer
+        fromUserId:
+          type: string
+        toUserId:
+          type: string
+        tmdbId:
+          type: integer
+        message:
+          type: ["string", "null"]
+        seen:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    RecommendationWithMovie:
+      type: object
+      required: [id, fromUserId, toUserId, tmdbId, seen, createdAt, movie, fromUser]
+      properties:
+        id:
+          type: integer
+        fromUserId:
+          type: string
+        toUserId:
+          type: string
+        tmdbId:
+          type: integer
+        message:
+          type: ["string", "null"]
+        seen:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        movie:
+          $ref: "#/components/schemas/MovieSummary"
+        fromUser:
+          $ref: "#/components/schemas/UserProfile"
+
+    RecommendationInput:
+      type: object
+      required: [toUserId, tmdbId]
+      properties:
+        toUserId:
+          type: string
+        tmdbId:
+          type: integer
+        movieTitle:
+          type: string
+        moviePosterPath:
+          type: ["string", "null"]
+        message:
+          type: ["string", "null"]
+
+    Notification:
+      type: object
+      required: [id, userId, type, data, read, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        type:
+          type: string
+        data:
+          type: object
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
