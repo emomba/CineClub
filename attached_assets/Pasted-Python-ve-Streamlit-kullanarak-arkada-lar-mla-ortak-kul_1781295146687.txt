@@ -1,0 +1,25 @@
+Python ve Streamlit kullanarak arkadaşlarımla ortak kullanabileceğim, gizli bir sinema ve film listesi uygulaması yapmak istiyoruz. Uygulamanın adı "CineClub" olacak. 
+
+TEMA VE TASARIM: Uygulama baştan aşağı modern, şık ve gözü yormayan derin bir siyah temaya (Gemini web arayüzünün chat ekranındaki o premium derin/saf siyah arka plan tonunda) sahip olacak. Gri veya antrasit tonlar kullanılmayacak, zemin tamamen bu derin siyah olacak. Bu asil siyah zemin üzerinde; butonlar, parlayan kenarlıklar, kart geçişleri ve aktif sekmeler soft SARI ve KIRMIZI renklerin yumuşak geçişleriyle (gradients) modern ve estetik bir uyumla tasarlanacak.
+
+Lütfen şu özellikleri eksiksiz, birbirine bağlı ve hatasız şekilde TEK SEFERDE inşa et:
+
+1. GİRİŞ, KAYIT VE GELİŞMİŞ PROFİL SİSTEMİ: Giriş ekranında net bir "Kayıt Ol" (Sign Up) seçeneği olsun. Kullanıcılar benzersiz (unique) bir kullanıcı adı ve şifre belirleyerek kayıt olabilsin; bir kullanıcı adını birden fazla kişi kesinlikle alamasın. Uygulama içinde bir "Profil Özelleştirme" alanı olsun; kullanıcılar buradan profil resmi yükleyebilmeli/seçebilmeli ve isterlerse kullanıcı adlarını (sistemde başka kimsede olmaması şartıyla) sonradan değiştirebilmeli. Uygulama sadece linke sahip olan kişilere özel ve gizli olacak.
+
+2. GELİŞMİŞ TMDB API ENTEGRASYONU & MARVEL ARAMASI: Uygulamada güçlü bir film arama barı olsun. Kullanıcı "Marvel" veya "MCU" gibi kelimeler arattığında, TMDB'den ilgili tüm Marvel Sinematik Evreni filmleri listelenebilsin. TMDB API kullanılarak filmlerin afişi, konusu, çıkış yılı, türleri, oyuncuları ve varsa YouTube fragman linki otomatik çekilsin.
+
+3. TIKLANABİLİR KATEGORİLER VE SIRALAMA SİSTEMİ: Filmlerin detaylarında görünen kategoriler/türler (Korku, Aksiyon, Bilim Kurgu vb.) TIKLANABİLİR olsun. Kullanıcı bir kategoriye tıkladığında, sistem otomatik olarak o kategorideki diğer tüm filmleri listelesin. Ayrıca film listelerinde "IMDb Puanına Göre Sırala (Yüksekten Düşüğe)", "Çıkış Yılına Göre Sırala" ve "Popülerliğe Göre Sırala" seçenekleri (Sıralama/Filtreleme menüsü) olsun.
+
+4. İSİMLENDİRİLEBİLİR ÇOKLU LİSTELER: Kullanıcılar kendi özel isimleriyle BİRDEN ÇOK izleme listesi oluşturabilsin (Örn: "Berat ile İzlenecekler", "Marvel Maratonu"). Klasik "İzledim" ve "İzleyeceğim" durumları da korunsun ve bu listelere kolayca film eklenebilsin.
+
+5. PUANLAMA, YORUMLAR VE SPOILER KİLİDİ: Kullanıcılar filmlere 10 üzerinden puan verebilsin ve yorum yazabilsin. Yorum yaparken "Spoiler (Sürprizbozan) İçeriyor" seçeneği olsun; eğer işaretliyse arkadaşları o yorumu gizli/sansürlü görsün, üstüne tıklayınca açılsın.
+
+6. SOSYAL ÖZELLİKLER VE ARKADAŞLIK: Bir "Arkadaşlar" sekmesi olsun. Kullanıcılar birbirine kullanıcı adı ile arkadaşlık isteği gönderip onaylayabilsin. Bir filme girildiğinde "Bu filmi izleyen arkadaşlarım ve puanları" listelensin; orada filmi izleyen arkadaşların isimleri, profil resimleri, verdikleri puanlar ve yorumlar listelensin. Bir arkadaşın profiline girildiğinde onun tüm listeleri ve yorumları görülebilsin. İki arkadaşın ortak izlemek istediği filmleri listeleyen bir "Ortak Watchlist" alanı da yer alsın.
+
+7. "NE İZLESEK?" RASTGELE FİLM SEÇİCİ: Uygulamada kararsız anlar için bir buton olsun. Kullanıcının seçtiği bir türe göre veya iki arkadaşın "Ortak Watchlist" listesinden rastgele bir filmi ekrana getirerek seçimi kolaylaştırsın.
+
+8. AKILLI ANA SAYFA VE ÖNERİLER: Üst tarafta kaydırılabilir "Popüler Filmler" listelensin. Altta ise kullanıcının izleme geçmişindeki film kategorilerine göre akıllıca şekillenen dinamik film önerileri olsun. Her filmin altında "Bunu sevdiyseniz, şu filmler de hoşunuza gidebilir" (TMDB Recommendations) kısmı yer alsın. Doğrudan "Arkadaşına Öner" butonuyla arkadaşlara film tavsiyesi gönderilebilsin ve bu öneriler karşı tarafa bildirim olarak gitsin.
+
+9. ESTETİK FİLM SAYFALARI: Bir filmin detay sayfasına girildiğinde, sayfa arayüzünün detayları/renk tonları filmin afişindeki baskın renklere göre hafifçe uyum sağlasın (UI Matching).
+
+10. AYARLAR & API KEY ALTYAPISI: Uygulamanın sorunsuz çalışması için TMDB API anahtarını (Key) Replit Secrets (Çevre Değişkenleri) üzerinden okuyacak şekilde kodu güvenli tasarla.
