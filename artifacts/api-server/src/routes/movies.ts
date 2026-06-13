@@ -25,6 +25,18 @@ import {
 
 const router: IRouter = Router();
 
+/**
+ * Prefer films with a confirmed IMDb rating.
+ * Returns up to `limit` films: IMDb-rated ones first, TMDB-fallback ones after.
+ * This ensures all main sections show IMDb ratings when available,
+ * and gracefully degrades to TMDB only when IMDb genuinely has no data yet.
+ */
+function preferImdb<T extends { imdbRating?: number | null }>(films: T[], limit = 20): T[] {
+  const withImdb = films.filter(m => m.imdbRating != null);
+  if (withImdb.length >= limit) return withImdb.slice(0, limit);
+  const withoutImdb = films.filter(m => m.imdbRating == null);
+  return [...withImdb, ...withoutImdb].slice(0, limit);
+}
 
 router.get("/movies/search", async (req, res): Promise<void> => {
   const q = String(req.query.q ?? "");
@@ -46,15 +58,19 @@ router.get("/movies/popular", async (req, res): Promise<void> => {
 
 router.get("/movies/recent-popular", async (req, res): Promise<void> => {
   const data = await getRecentPopularMovies();
+  // Enrich full candidate pool (up to 60), then prefer IMDb-rated films first
   const enriched = await enrichMoviesWithImdb(data.results);
-  const results = sortByImdbRating(enriched);
+  const sorted = sortByImdbRating(enriched);
+  const results = preferImdb(sorted, 20);
   res.json({ ...data, results });
 });
 
 router.get("/movies/trending", async (req, res): Promise<void> => {
   const data = await getTrendingMovies();
+  // Enrich full candidate pool (up to 60), then prefer IMDb-rated films first
   const enriched = await enrichMoviesWithImdb(data.results);
-  const results = sortByImdbRating(enriched);
+  const sorted = sortByImdbRating(enriched);
+  const results = preferImdb(sorted, 20);
   res.json({ ...data, results });
 });
 
@@ -62,7 +78,7 @@ router.get("/movies/top-rated", async (req, res): Promise<void> => {
   const page = parseInt(String(req.query.page ?? "1"), 10);
   const data = await getTopRatedMovies(page);
   const enriched = await enrichMoviesWithImdb(data.results);
-  const results = sortByImdbRating(enriched);
+  const results = preferImdb(sortByImdbRating(enriched), 20);
   res.json({ ...data, results });
 });
 
@@ -70,7 +86,7 @@ router.get("/movies/classics", async (req, res): Promise<void> => {
   const page = parseInt(String(req.query.page ?? "1"), 10);
   const data = await getClassicMovies(page);
   const enriched = await enrichMoviesWithImdb(data.results);
-  const results = sortByImdbRating(enriched);
+  const results = preferImdb(sortByImdbRating(enriched), 20);
   res.json({ ...data, results });
 });
 
@@ -79,7 +95,7 @@ router.get("/movies/language/:lang", async (req, res): Promise<void> => {
   const page = parseInt(String(req.query.page ?? "1"), 10);
   const data = await getMoviesByLanguage(lang, page);
   const enriched = await enrichMoviesWithImdb(data.results);
-  const results = sortByImdbRating(enriched);
+  const results = preferImdb(sortByImdbRating(enriched), 20);
   res.json({ ...data, results });
 });
 
@@ -111,13 +127,14 @@ router.get("/movies/genre/:genreId", async (req, res): Promise<void> => {
       return true;
     });
     const enriched = await enrichMoviesWithImdb(merged, 10);
-    const results = sortByImdbRating(enriched);
+    const results = preferImdb(sortByImdbRating(enriched), 20);
     const realTotalPages = pages[0]?.totalPages ?? 1;
     res.json({ results, totalPages: 1, page: 1, _poolTotalPages: realTotalPages });
   } else {
     const data = await getMoviesByGenre(genreId, page, rawSort, runtimeFilter);
     const enriched = await enrichMoviesWithImdb(data.results);
-    res.json({ ...data, results: enriched });
+    const results = preferImdb(sortByImdbRating(enriched), 20);
+    res.json({ ...data, results });
   }
 });
 

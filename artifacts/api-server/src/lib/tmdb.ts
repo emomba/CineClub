@@ -141,7 +141,8 @@ export async function getRecentPopularMovies() {
     }
   }
 
-  return { results: results.slice(0, 20), totalPages: 1, page: 1 };
+  // Return up to 60 candidates so the route can filter to IMDb-rated films first
+  return { results: results.slice(0, 60), totalPages: 1, page: 1 };
 }
 
 export async function getTopRatedMovies(page = 1) {
@@ -192,8 +193,9 @@ export async function getTrendingMovies() {
     [combined[i], combined[j]] = [combined[j], combined[i]];
   }
 
+  // Return up to 60 candidates so the route can filter to IMDb-rated films first
   return {
-    results: combined.slice(0, 20),
+    results: combined.slice(0, 60),
     totalPages: 1,
     page: 1,
   };
