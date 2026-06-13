@@ -261,8 +261,7 @@ export default function Home() {
   const { data: recentPopular, isLoading: loadingRecent } = useQuery<MovieList>({
     queryKey: ["movies", "recent-popular"],
     queryFn: () => fetchMovies("/api/movies/recent-popular"),
-    staleTime: 10 * 60 * 1000,
-    refetchInterval: 15 * 60 * 1000,
+    staleTime: 0,
   });
 
   const { data: trending, isLoading: loadingTrending } = useGetTrendingMovies();
@@ -270,33 +269,33 @@ export default function Home() {
   const { data: topRated, isLoading: loadingTopRated } = useQuery<MovieList>({
     queryKey: ["movies", "top-rated"],
     queryFn: () => fetchMovies("/api/movies/top-rated"),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   });
 
   const { data: classics1, isLoading: loadingClassics1 } = useQuery<MovieList>({
     queryKey: ["movies", "classics", 1],
     queryFn: () => fetchMovies("/api/movies/classics?page=1"),
-    staleTime: 30 * 60 * 1000,
+    staleTime: 0,
   });
   const { data: classics2 } = useQuery<MovieList>({
     queryKey: ["movies", "classics", 2],
     queryFn: () => fetchMovies("/api/movies/classics?page=2"),
-    staleTime: 30 * 60 * 1000,
+    staleTime: 0,
   });
   const { data: classics3 } = useQuery<MovieList>({
     queryKey: ["movies", "classics", 3],
     queryFn: () => fetchMovies("/api/movies/classics?page=3"),
-    staleTime: 30 * 60 * 1000,
+    staleTime: 0,
   });
   const { data: classics4 } = useQuery<MovieList>({
     queryKey: ["movies", "classics", 4],
     queryFn: () => fetchMovies("/api/movies/classics?page=4"),
-    staleTime: 30 * 60 * 1000,
+    staleTime: 0,
   });
   const { data: classics5 } = useQuery<MovieList>({
     queryKey: ["movies", "classics", 5],
     queryFn: () => fetchMovies("/api/movies/classics?page=5"),
-    staleTime: 30 * 60 * 1000,
+    staleTime: 0,
   });
 
   function dedupe(movies: any[]): any[] {

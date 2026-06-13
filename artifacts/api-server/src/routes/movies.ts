@@ -76,10 +76,23 @@ router.get("/movies/trending", async (req, res): Promise<void> => {
 
 router.get("/movies/top-rated", async (req, res): Promise<void> => {
   const page = parseInt(String(req.query.page ?? "1"), 10);
-  const data = await getTopRatedMovies(page);
-  const enriched = await enrichMoviesWithImdb(data.results);
+  // Fetch 2 TMDB pages per virtual page to build a 40-film pool,
+  // then preferImdb ensures we always return 20 IMDb-rated films.
+  const tmdbPage1 = (page - 1) * 2 + 1;
+  const tmdbPage2 = tmdbPage1 + 1;
+  const [data1, data2] = await Promise.all([
+    getTopRatedMovies(tmdbPage1),
+    getTopRatedMovies(tmdbPage2).catch(() => ({ results: [], totalPages: 1, page: tmdbPage2 })),
+  ]);
+  const seen = new Set<number>();
+  const combined = [...data1.results, ...data2.results].filter(m => {
+    if (seen.has(m.tmdbId)) return false;
+    seen.add(m.tmdbId);
+    return true;
+  });
+  const enriched = await enrichMoviesWithImdb(combined);
   const results = preferImdb(sortByImdbRating(enriched), 20);
-  res.json({ ...data, results });
+  res.json({ results, totalPages: Math.ceil(data1.totalPages / 2), page });
 });
 
 router.get("/movies/classics", async (req, res): Promise<void> => {
