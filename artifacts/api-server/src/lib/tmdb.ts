@@ -185,12 +185,21 @@ export async function getClassicMovies(page = 1) {
   };
 }
 
-export async function getMoviesByGenre(genreId: number, page = 1, sortBy = "popularity.desc") {
-  const data = await tmdbFetch("/discover/movie", {
+export async function getMoviesByGenre(
+  genreId: number,
+  page = 1,
+  sortBy = "popularity.desc",
+  runtimeFilter: "all" | "movie" | "short" = "all",
+) {
+  const params: Record<string, string | number> = {
     with_genres: genreId,
     page,
     sort_by: sortBy,
-  });
+  };
+  if (runtimeFilter === "movie") params["with_runtime.gte"] = 60;
+  if (runtimeFilter === "short") params["with_runtime.lte"] = 59;
+
+  const data = await tmdbFetch("/discover/movie", params);
   return {
     results: (data.results ?? []).filter((m: any) => !m.adult && !isBlocked(m)).map(mapMovie),
     totalPages: data.total_pages ?? 1,

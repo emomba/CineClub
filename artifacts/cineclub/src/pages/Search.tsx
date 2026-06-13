@@ -4,7 +4,7 @@ import { PageTransition } from "@/components/PageTransition";
 import { MovieCard } from "@/components/MovieCard";
 import { useSearchMovies, useGetGenreList } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { Search as SearchIcon, X, ArrowUpDown } from "lucide-react";
+import { Search as SearchIcon, X, ArrowUpDown, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLang } from "@/lib/i18n";
@@ -35,6 +35,7 @@ export default function Search() {
   const [selectedGenreName, setSelectedGenreName] = useState<string>("");
   const [sortBy, setSortBy] = useState("popularity.desc");
   const [sortOpen, setSortOpen] = useState(false);
+  const [runtimeFilter, setRuntimeFilter] = useState<"all" | "movie" | "short">("all");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -55,9 +56,9 @@ export default function Search() {
   );
 
   const { data: genreResults, isLoading: loadingGenre } = useQuery<{ results: any[] }>({
-    queryKey: ["moviesByGenre", selectedGenre, sortBy],
+    queryKey: ["moviesByGenre", selectedGenre, sortBy, runtimeFilter],
     queryFn: () =>
-      fetch(`/api/movies/genre/${selectedGenre}?sortBy=${sortBy}`).then(r => r.json()),
+      fetch(`/api/movies/genre/${selectedGenre}?sortBy=${sortBy}&runtimeFilter=${runtimeFilter}`).then(r => r.json()),
     enabled: !!selectedGenre,
     staleTime: 5 * 60 * 1000,
   });
@@ -115,34 +116,59 @@ export default function Search() {
         ))}
       </div>
 
-      {selectedGenre && (
-        <div className="flex items-center justify-between">
+      {(selectedGenre || debouncedQuery) && (
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <h2 className="text-xl font-bold">
-            {selectedGenreName || t("browseByGenre")}
+            {selectedGenre
+              ? (selectedGenreName || t("browseByGenre"))
+              : `"${debouncedQuery}" sonuçları`}
           </h2>
-          <div className="relative">
-            <button
-              onClick={() => setSortOpen(v => !v)}
-              className="flex items-center gap-2 bg-[#111] border border-gray-800 text-gray-300 hover:text-white px-4 py-2 rounded-xl text-sm transition-all hover:border-amber-500/50"
-            >
-              <ArrowUpDown size={15} className="text-amber-500" />
-              <span>{t(currentSortLabel as any)}</span>
-            </button>
-            {sortOpen && (
-              <div className="absolute right-0 top-full mt-1 bg-[#111] border border-gray-800 rounded-xl overflow-hidden shadow-xl z-50 min-w-[180px]">
-                {SORT_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
-                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                      sortBy === opt.value
-                        ? "bg-gradient-to-r from-amber-500/20 to-red-500/20 text-amber-400"
-                        : "text-gray-300 hover:bg-white/5 hover:text-white"
-                    }`}
-                  >
-                    {t(opt.labelKey as any)}
-                  </button>
-                ))}
+          <div className="flex items-center gap-2">
+            {/* Runtime filter */}
+            <div className="flex items-center gap-1 bg-[#111] border border-gray-800 rounded-xl p-1">
+              <Filter size={13} className="text-gray-600 ml-1.5 shrink-0" />
+              {(["all", "movie", "short"] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setRuntimeFilter(f)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    runtimeFilter === f
+                      ? "bg-gradient-to-r from-amber-500 to-red-500 text-black shadow-sm"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  {f === "all" ? "Tümü" : f === "movie" ? "Film" : "Kısa Film"}
+                </button>
+              ))}
+            </div>
+
+            {/* Sort — only for genre browse */}
+            {selectedGenre && (
+              <div className="relative">
+                <button
+                  onClick={() => setSortOpen(v => !v)}
+                  className="flex items-center gap-2 bg-[#111] border border-gray-800 text-gray-300 hover:text-white px-4 py-2 rounded-xl text-sm transition-all hover:border-amber-500/50"
+                >
+                  <ArrowUpDown size={15} className="text-amber-500" />
+                  <span>{t(currentSortLabel as any)}</span>
+                </button>
+                {sortOpen && (
+                  <div className="absolute right-0 top-full mt-1 bg-[#111] border border-gray-800 rounded-xl overflow-hidden shadow-xl z-50 min-w-[180px]">
+                    {SORT_OPTIONS.map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
+                        className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                          sortBy === opt.value
+                            ? "bg-gradient-to-r from-amber-500/20 to-red-500/20 text-amber-400"
+                            : "text-gray-300 hover:bg-white/5 hover:text-white"
+                        }`}
+                      >
+                        {t(opt.labelKey as any)}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

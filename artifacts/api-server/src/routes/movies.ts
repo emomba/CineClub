@@ -75,7 +75,8 @@ router.get("/movies/genre/:genreId", async (req, res): Promise<void> => {
   const genreId = parseInt(raw, 10);
   const page = parseInt(String(req.query.page ?? "1"), 10);
   const sortBy = String(req.query.sortBy ?? "popularity.desc");
-  const data = await getMoviesByGenre(genreId, page, sortBy);
+  const runtimeFilter = String(req.query.runtimeFilter ?? "all") as "all" | "movie" | "short";
+  const data = await getMoviesByGenre(genreId, page, sortBy, runtimeFilter);
   res.json(data);
 });
 
