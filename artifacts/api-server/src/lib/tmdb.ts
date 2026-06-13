@@ -238,6 +238,39 @@ export async function getMovieRecommendations(tmdbId: number) {
   };
 }
 
+export async function getActorDetail(personId: number) {
+  const [person, credits] = await Promise.all([
+    tmdbFetch(`/person/${personId}`),
+    tmdbFetch(`/person/${personId}/movie_credits`),
+  ]);
+
+  const today = new Date();
+  const birthDate = person.birthday ? new Date(person.birthday) : null;
+  const age = birthDate
+    ? today.getFullYear() - birthDate.getFullYear() -
+      (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate()) ? 1 : 0)
+    : null;
+
+  const movies = (credits.cast ?? [])
+    .filter((m: any) => m.poster_path && m.vote_count > 5)
+    .sort((a: any, b: any) => (b.popularity ?? 0) - (a.popularity ?? 0))
+    .slice(0, 40)
+    .map(mapMovie);
+
+  return {
+    id: person.id,
+    name: person.name,
+    profilePath: person.profile_path ?? null,
+    biography: person.biography ?? null,
+    birthday: person.birthday ?? null,
+    deathday: person.deathday ?? null,
+    placeOfBirth: person.place_of_birth ?? null,
+    age,
+    knownForDepartment: person.known_for_department ?? null,
+    movies,
+  };
+}
+
 export async function getActorMovies(personId: number) {
   const data = await tmdbFetch(`/person/${personId}/movie_credits`);
   const results = (data.cast ?? [])

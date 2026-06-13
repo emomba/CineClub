@@ -14,6 +14,7 @@ import {
   getGenreList,
   getMovieDetail,
   getMovieRecommendations,
+  getActorDetail,
   getActorMovies,
   getMoviesByIds,
   getRandomMoviePick,
@@ -75,6 +76,12 @@ router.get("/movies/genre/:genreId", async (req, res): Promise<void> => {
   const page = parseInt(String(req.query.page ?? "1"), 10);
   const sortBy = String(req.query.sortBy ?? "popularity.desc");
   const data = await getMoviesByGenre(genreId, page, sortBy);
+  res.json(data);
+});
+
+router.get("/actors/:personId", async (req, res): Promise<void> => {
+  const personId = Number(req.params.personId);
+  const data = await getActorDetail(personId);
   res.json(data);
 });
 

@@ -20,6 +20,7 @@ import FriendProfile from "@/pages/FriendProfile";
 import Profile from "@/pages/Profile";
 import Recommendations from "@/pages/Recommendations";
 import Notifications from "@/pages/Notifications";
+import ActorDetail from "@/pages/ActorDetail";
 
 const queryClient = new QueryClient();
 
@@ -167,6 +168,7 @@ function Router() {
       <ProtectedRoute path="/profile" component={Profile} />
       <ProtectedRoute path="/recommendations" component={Recommendations} />
       <ProtectedRoute path="/notifications" component={Notifications} />
+      <ProtectedRoute path="/actor/:personId" component={ActorDetail} />
       
       <Route component={NotFound} />
     </Switch>

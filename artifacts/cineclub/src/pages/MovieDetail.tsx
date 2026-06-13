@@ -1,4 +1,4 @@
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { PageTransition } from "@/components/PageTransition";
 import {
   useGetMovie,
@@ -10,7 +10,7 @@ import {
   useUpsertReview
 } from "@workspace/api-client-react";
 import { getBackdropUrl, getPosterUrl, getProfileUrl } from "@/lib/tmdb";
-import { Star, Clock, Calendar, Plus, Check, EyeOff, MessageSquare, X } from "lucide-react";
+import { Star, Clock, Calendar, Plus, Check, EyeOff, MessageSquare } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -87,44 +87,6 @@ function ReviewCard({ review }: { review: any }) {
   );
 }
 
-function ActorMoviesDialog({ actor, onClose }: { actor: { id: number; name: string } | null; onClose: () => void }) {
-  const { t } = useLang();
-  const { data, isLoading } = useQuery<{ results: any[] }>({
-    queryKey: ["actorMovies", actor?.id],
-    queryFn: () => fetch(`/api/actors/${actor!.id}/movies`).then(r => r.json()),
-    enabled: !!actor?.id,
-    staleTime: 10 * 60 * 1000,
-  });
-
-  return (
-    <Dialog open={!!actor} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-[#111] border-gray-800 text-white max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold flex items-center justify-between pr-8">
-            <span>{actor?.name} — {t("actorFilmography")}</span>
-          </DialogTitle>
-        </DialogHeader>
-        <div className="pt-4">
-          {isLoading ? (
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-              {[...Array(8)].map((_, i) => <Skeleton key={i} className="w-full aspect-[2/3] rounded-xl bg-[#222]" />)}
-            </div>
-          ) : data?.results && data.results.length > 0 ? (
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-              {data.results.map(movie => (
-                <div key={movie.tmdbId} onClick={onClose}>
-                  <MovieCard movie={movie} />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-center py-8">{t("noMoviesFound")}</p>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 export default function MovieDetail() {
   const { t } = useLang();
@@ -156,11 +118,11 @@ export default function MovieDetail() {
   const removeFromList = useRemoveMovieFromWatchlist();
   const upsertReview = useUpsertReview();
 
+  const [, setLocation] = useLocation();
   const [reviewText, setReviewText] = useState("");
   const [rating, setRating] = useState(0);
   const [isSpoiler, setIsSpoiler] = useState(false);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
-  const [selectedActor, setSelectedActor] = useState<{ id: number; name: string } | null>(null);
 
   const handleToggleWatchlist = (watchlistId: number, isInList: boolean) => {
     if (!movie) return;
@@ -348,10 +310,10 @@ export default function MovieDetail() {
             <p className="text-gray-300 leading-relaxed text-lg">{movie.overview}</p>
           </div>
 
-          {/* Embedded YouTube Trailer */}
+          {/* Embedded YouTube Trailer — compact size */}
           {movie.trailerKey && (
             <div className="pt-4">
-              <div className="w-full aspect-video rounded-2xl overflow-hidden border border-gray-800 shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
+              <div className="max-w-xl aspect-video rounded-2xl overflow-hidden border border-gray-800 shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
                 <iframe
                   src={`https://www.youtube.com/embed/${movie.trailerKey}?rel=0&modestbranding=1`}
                   title={`${movie.title} Trailer`}
@@ -363,7 +325,7 @@ export default function MovieDetail() {
             </div>
           )}
 
-          {/* Cast — clickable for filmography */}
+          {/* Cast — her oyuncu kendi sayfasına gider */}
           {movie.cast && movie.cast.length > 0 && (
             <div className="pt-6">
               <h3 className="text-xl font-bold mb-4">{t("cast")}</h3>
@@ -371,7 +333,7 @@ export default function MovieDetail() {
                 {movie.cast.slice(0, 12).map((person: any) => (
                   <button
                     key={person.id}
-                    onClick={() => setSelectedActor({ id: person.id, name: person.name })}
+                    onClick={() => setLocation(`/actor/${person.id}`)}
                     className="w-[120px] shrink-0 snap-start text-left group focus:outline-none"
                   >
                     <div className="aspect-[2/3] rounded-xl overflow-hidden bg-[#111] mb-2 border border-gray-800 group-hover:border-amber-500/50 transition-colors group-hover:scale-105 transform duration-200">
@@ -434,8 +396,6 @@ export default function MovieDetail() {
         </div>
       )}
 
-      {/* Actor Filmography Dialog */}
-      <ActorMoviesDialog actor={selectedActor} onClose={() => setSelectedActor(null)} />
     </PageTransition>
   );
 }
