@@ -313,35 +313,6 @@ export default function Home() {
   return (
     <PageTransition className="space-y-14">
 
-      {/* Profile card */}
-      <Link href="/profile">
-        <div className="flex items-center gap-4 bg-[#111] border border-white/8 rounded-2xl px-5 py-4 hover:border-amber-500/30 hover:bg-[#161616] transition-all cursor-pointer group">
-          <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white/10 shrink-0 bg-[#1a1a1a] group-hover:border-amber-500/40 transition-colors">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt={displayName || "Profil"} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <User size={24} className="text-gray-600 group-hover:text-gray-400 transition-colors" />
-              </div>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            {displayName ? (
-              <>
-                <p className="text-lg font-bold text-white truncate leading-tight">{displayName}</p>
-                <p className="text-sm text-gray-500 mt-0.5">Profilini görüntüle</p>
-              </>
-            ) : (
-              <>
-                <p className="text-lg font-bold text-white leading-tight">Profilim</p>
-                <p className="text-sm text-gray-500 mt-0.5">İsim ve avatar ekle</p>
-              </>
-            )}
-          </div>
-          <ChevronRight size={18} className="text-gray-700 group-hover:text-amber-500 transition-colors shrink-0" />
-        </div>
-      </Link>
-
       {/* Şu An Popüler — featured hero, son 6 ay */}
       <section>
         <div className="flex items-center justify-between mb-5">
