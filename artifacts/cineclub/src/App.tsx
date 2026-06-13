@@ -3,10 +3,11 @@ import { LangProvider } from "@/lib/i18n";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { ClerkProvider, SignIn, SignUp, Show, useClerk } from '@clerk/react';
+import { ClerkProvider, SignIn, SignUp, Show, useClerk, useAuth } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { dark } from '@clerk/themes';
 import { useEffect, useRef } from "react";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import { AppLayout } from "@/components/AppLayout";
@@ -122,6 +123,17 @@ function SignUpPage() {
   );
 }
 
+function AuthTokenSetup() {
+  const { getToken } = useAuth();
+
+  useEffect(() => {
+    setAuthTokenGetter(() => getToken());
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
+
+  return null;
+}
+
 function ClerkQueryClientCacheInvalidator() {
   const { addListener } = useClerk();
   const queryClient = useQueryClient();
@@ -197,6 +209,7 @@ function ClerkProviderWithRoutes() {
       routerReplace={(to: string) => setLocation(stripBase(to), { replace: true })}
     >
       <QueryClientProvider client={queryClient}>
+        <AuthTokenSetup />
         <ClerkQueryClientCacheInvalidator />
         <Router />
       </QueryClientProvider>
