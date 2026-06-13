@@ -19,6 +19,7 @@ import {
   getMoviesByIds,
   getRandomMoviePick,
   enrichMoviesWithImdb,
+  sortByImdbRating,
 } from "../lib/tmdb";
 
 const router: IRouter = Router();
@@ -28,38 +29,46 @@ router.get("/movies/search", async (req, res): Promise<void> => {
   const page = parseInt(String(req.query.page ?? "1"), 10);
   if (!q) { res.status(400).json({ error: "q is required" }); return; }
   const data = await searchMovies(q, page);
-  res.json(data);
+  const enriched = await enrichMoviesWithImdb(data.results);
+  const results = sortByImdbRating(enriched);
+  res.json({ ...data, results });
 });
 
 router.get("/movies/popular", async (req, res): Promise<void> => {
   const page = parseInt(String(req.query.page ?? "1"), 10);
   const data = await getPopularMovies(page);
-  res.json(data);
+  const enriched = await enrichMoviesWithImdb(data.results);
+  const results = sortByImdbRating(enriched);
+  res.json({ ...data, results });
 });
 
 router.get("/movies/recent-popular", async (req, res): Promise<void> => {
   const data = await getRecentPopularMovies();
-  const results = await enrichMoviesWithImdb(data.results);
+  const enriched = await enrichMoviesWithImdb(data.results);
+  const results = sortByImdbRating(enriched);
   res.json({ ...data, results });
 });
 
 router.get("/movies/trending", async (req, res): Promise<void> => {
   const data = await getTrendingMovies();
-  const results = await enrichMoviesWithImdb(data.results);
+  const enriched = await enrichMoviesWithImdb(data.results);
+  const results = sortByImdbRating(enriched);
   res.json({ ...data, results });
 });
 
 router.get("/movies/top-rated", async (req, res): Promise<void> => {
   const page = parseInt(String(req.query.page ?? "1"), 10);
   const data = await getTopRatedMovies(page);
-  const results = await enrichMoviesWithImdb(data.results);
+  const enriched = await enrichMoviesWithImdb(data.results);
+  const results = sortByImdbRating(enriched);
   res.json({ ...data, results });
 });
 
 router.get("/movies/classics", async (req, res): Promise<void> => {
   const page = parseInt(String(req.query.page ?? "1"), 10);
   const data = await getClassicMovies(page);
-  const results = await enrichMoviesWithImdb(data.results);
+  const enriched = await enrichMoviesWithImdb(data.results);
+  const results = sortByImdbRating(enriched);
   res.json({ ...data, results });
 });
 
@@ -67,7 +76,8 @@ router.get("/movies/language/:lang", async (req, res): Promise<void> => {
   const lang = String(req.params.lang);
   const page = parseInt(String(req.query.page ?? "1"), 10);
   const data = await getMoviesByLanguage(lang, page);
-  const results = await enrichMoviesWithImdb(data.results);
+  const enriched = await enrichMoviesWithImdb(data.results);
+  const results = sortByImdbRating(enriched);
   res.json({ ...data, results });
 });
 
@@ -80,10 +90,13 @@ router.get("/movies/genre/:genreId", async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.genreId) ? req.params.genreId[0] : req.params.genreId;
   const genreId = parseInt(raw, 10);
   const page = parseInt(String(req.query.page ?? "1"), 10);
-  const sortBy = String(req.query.sortBy ?? "popularity.desc");
+  // "imdb.desc" is a frontend-only sort — pass vote_average.desc to TMDB for best pool, then re-sort by IMDb
+  const rawSort = String(req.query.sortBy ?? "imdb.desc");
+  const tmdbSort = rawSort === "imdb.desc" ? "vote_average.desc" : rawSort;
   const runtimeFilter = String(req.query.runtimeFilter ?? "all") as "all" | "movie" | "short";
-  const data = await getMoviesByGenre(genreId, page, sortBy, runtimeFilter);
-  const results = await enrichMoviesWithImdb(data.results);
+  const data = await getMoviesByGenre(genreId, page, tmdbSort, runtimeFilter);
+  const enriched = await enrichMoviesWithImdb(data.results);
+  const results = rawSort === "imdb.desc" ? sortByImdbRating(enriched) : enriched;
   res.json({ ...data, results });
 });
 

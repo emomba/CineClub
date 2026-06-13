@@ -19,6 +19,7 @@ function useLocalDebounce<T>(value: T, delay: number): T {
 }
 
 const SORT_OPTIONS = [
+  { value: "imdb.desc", labelKey: "sortImdb" },
   { value: "popularity.desc", labelKey: "sortPopularity" },
   { value: "vote_average.desc", labelKey: "sortRating" },
   { value: "title.asc", labelKey: "sortTitle" },
@@ -33,7 +34,7 @@ export default function Search() {
   const debouncedQuery = useLocalDebounce(query, 500);
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
   const [selectedGenreName, setSelectedGenreName] = useState<string>("");
-  const [sortBy, setSortBy] = useState("popularity.desc");
+  const [sortBy, setSortBy] = useState("imdb.desc");
   const [sortOpen, setSortOpen] = useState(false);
   const [runtimeFilter, setRuntimeFilter] = useState<"all" | "movie" | "short">("all");
 

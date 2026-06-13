@@ -297,6 +297,16 @@ export async function enrichMoviesWithImdb<T extends { tmdbId: number }>(
   return enriched;
 }
 
+export function sortByImdbRating<T extends { imdbRating?: number | null; voteAverage?: number }>(
+  movies: T[],
+): T[] {
+  return [...movies].sort((a, b) => {
+    const ratingA = a.imdbRating ?? (a.voteAverage ?? 0) / 10;
+    const ratingB = b.imdbRating ?? (b.voteAverage ?? 0) / 10;
+    return ratingB - ratingA;
+  });
+}
+
 export async function getMovieDetail(tmdbId: number, langCode = "tr") {
   const tmdbLang = TMDB_LANG[langCode] ?? "tr-TR";
   const fallbackLang = tmdbLang === "en-US" ? null : "en-US";
