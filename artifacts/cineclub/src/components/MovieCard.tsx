@@ -20,11 +20,7 @@ export function MovieCard({
       <motion.div
         whileHover={{ scale: 1.04, y: -4 }}
         transition={{ type: "spring", stiffness: 300, damping: 22 }}
-        className={`group relative cursor-pointer ${fullWidth ? "w-full" : "w-[155px] md:w-[185px] flex-shrink-0"}`}
-        style={{ zIndex: 0 }}
-        whileFocus={{ zIndex: 20 }}
-        onHoverStart={(e) => { (e.currentTarget as HTMLElement).style.zIndex = "20"; }}
-        onHoverEnd={(e) => { (e.currentTarget as HTMLElement).style.zIndex = "0"; }}
+        className={`group relative cursor-pointer z-0 hover:z-20 ${fullWidth ? "w-full" : "w-[155px] md:w-[185px] flex-shrink-0"}`}
       >
         {/* Image container — clips the poster, border applied here */}
         <div className="aspect-[2/3] w-full rounded-xl overflow-hidden bg-[#111] border border-transparent group-hover:border-amber-500/50 group-hover:shadow-[0_8px_24px_rgba(245,158,11,0.2)] transition-all duration-300">

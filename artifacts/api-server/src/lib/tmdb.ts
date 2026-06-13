@@ -51,7 +51,7 @@ export async function searchMovies(q: string, page = 1) {
 export async function getPopularMovies(page = 1) {
   const data = await tmdbFetch("/movie/popular", { page });
   return {
-    results: (data.results ?? []).map(mapMovie),
+    results: (data.results ?? []).filter((m: any) => !m.adult).map(mapMovie),
     totalPages: data.total_pages ?? 1,
     page: data.page ?? 1,
   };
@@ -86,7 +86,7 @@ export async function getRecentPopularMovies() {
   const results: any[] = [];
   for (const item of [...(page1.results ?? []), ...(page2.results ?? [])]) {
     const m = mapMovie(item);
-    if (!seen.has(m.tmdbId) && m.posterPath) {
+    if (!seen.has(m.tmdbId) && m.posterPath && !item.adult) {
       seen.add(m.tmdbId);
       results.push(m);
     }
@@ -98,7 +98,7 @@ export async function getRecentPopularMovies() {
 export async function getTopRatedMovies(page = 1) {
   const data = await tmdbFetch("/movie/top_rated", { page });
   return {
-    results: (data.results ?? []).map(mapMovie),
+    results: (data.results ?? []).filter((m: any) => !m.adult).map(mapMovie),
     totalPages: data.total_pages ?? 1,
     page: data.page ?? 1,
   };
@@ -152,7 +152,7 @@ export async function getClassicMovies(page = 1) {
     page,
   });
   return {
-    results: (data.results ?? []).map(mapMovie),
+    results: (data.results ?? []).filter((m: any) => !m.adult).map(mapMovie),
     totalPages: data.total_pages ?? 1,
     page: data.page ?? 1,
   };
@@ -165,7 +165,7 @@ export async function getMoviesByGenre(genreId: number, page = 1, sortBy = "popu
     sort_by: sortBy,
   });
   return {
-    results: (data.results ?? []).map(mapMovie),
+    results: (data.results ?? []).filter((m: any) => !m.adult).map(mapMovie),
     totalPages: data.total_pages ?? 1,
     page: data.page ?? 1,
   };
@@ -179,7 +179,7 @@ export async function getMoviesByLanguage(language: string, page = 1) {
     page,
   });
   return {
-    results: (data.results ?? []).map(mapMovie),
+    results: (data.results ?? []).filter((m: any) => !m.adult).map(mapMovie),
     totalPages: data.total_pages ?? 1,
     page: data.page ?? 1,
   };

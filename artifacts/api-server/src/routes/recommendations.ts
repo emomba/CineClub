@@ -120,4 +120,36 @@ router.patch("/recommendations/:id/read", requireAuth, async (req, res): Promise
   });
 });
 
+router.get("/recommendations/sent", requireAuth, async (req, res): Promise<void> => {
+  const clerkId = getClerkUserId(req);
+  const recs = await db
+    .select()
+    .from(recommendationsTable)
+    .where(eq(recommendationsTable.fromUserId, clerkId));
+
+  const result = await Promise.all(
+    recs.map(async (r) => {
+      const [toUser] = await db.select().from(usersTable).where(eq(usersTable.clerkId, r.toUserId));
+      return {
+        id: r.id,
+        fromUserId: r.fromUserId,
+        toUserId: r.toUserId,
+        tmdbId: r.tmdbId,
+        message: r.message ?? null,
+        rating: r.rating ?? null,
+        seen: r.seen === 1,
+        createdAt: r.createdAt.toISOString(),
+        movie: {
+          tmdbId: r.tmdbId,
+          title: r.movieTitle ?? "",
+          posterPath: r.moviePosterPath ?? null,
+        },
+        toUser: toUser ? await buildUserProfile(toUser) : null,
+      };
+    }),
+  );
+
+  res.json(result);
+});
+
 export default router;

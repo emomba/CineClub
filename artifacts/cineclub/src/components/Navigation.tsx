@@ -71,7 +71,7 @@ export function Sidebar() {
             className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors text-xs px-2 py-1.5 rounded-lg hover:bg-white/5 border border-transparent hover:border-gray-800"
             title={t("language")}
           >
-            <span className="text-base leading-none">{currentLang.flag}</span>
+            <img src={`https://flagcdn.com/20x15/${currentLang.countryCode}.png`} alt={currentLang.short} className="w-5 h-auto rounded-sm shrink-0" />
             <span className="font-medium">{currentLang.short}</span>
             <ChevronDown size={11} className="opacity-50" />
           </button>
@@ -83,8 +83,8 @@ export function Sidebar() {
                   onClick={() => { setLang(l.code); setLangOpen(false); }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors ${lang === l.code ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}
                 >
-                  <span className="text-base">{l.flag}</span>
-                  <span>{l.short}</span>
+                  <img src={`https://flagcdn.com/20x15/${l.countryCode}.png`} alt={l.short} className="w-5 h-auto rounded-sm shrink-0" />
+                  <span className="font-medium">{l.short}</span>
                   <span className="text-gray-600 text-xs ml-auto">{l.label}</span>
                 </button>
               ))}

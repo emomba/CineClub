@@ -2,20 +2,80 @@ import { useParams } from "wouter";
 import { PageTransition } from "@/components/PageTransition";
 import { useGetUserByUsername, useGetUserReviews, getGetUserByUsernameQueryKey, getGetUserReviewsQueryKey } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Film, Star, MessageSquare } from "lucide-react";
+import { User, Film, Star, MessageSquare, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import { useLang } from "@/lib/i18n";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@clerk/react";
+import { getPosterUrl } from "@/lib/tmdb";
+
+type WatchedMovie = {
+  tmdbId: number;
+  title: string;
+  posterPath: string | null;
+  releaseYear: number | null;
+  voteAverage: number;
+};
+
+function WatchedScroll({ movies, label }: { movies: WatchedMovie[]; label: string }) {
+  if (!movies.length) return null;
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-5 flex items-center gap-2">
+        <Film size={22} className="text-amber-500" />
+        {label}
+        <span className="text-gray-600 font-normal text-lg">({movies.length})</span>
+      </h2>
+      <div className="flex gap-3 overflow-x-auto pb-3 snap-x">
+        {movies.map(m => (
+          <Link key={m.tmdbId} href={`/movie/${m.tmdbId}`}>
+            <div className="w-28 shrink-0 snap-start group cursor-pointer">
+              <div className="aspect-[2/3] rounded-xl overflow-hidden bg-gray-900 border border-gray-800 group-hover:border-amber-500/50 group-hover:shadow-[0_4px_16px_rgba(245,158,11,0.2)] transition-all duration-300">
+                <img src={getPosterUrl(m.posterPath)} alt={m.title} className="w-full h-full object-cover" loading="lazy" />
+              </div>
+              <p className="text-xs text-gray-500 mt-1.5 line-clamp-1 group-hover:text-gray-300 transition-colors px-0.5">{m.title}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function FriendProfile() {
   const { t } = useLang();
   const { userId: username } = useParams<{ userId: string }>();
+  const { getToken } = useAuth();
 
   const { data: user, isLoading: loadingUser } = useGetUserByUsername(username, {
-    query: { enabled: !!username, queryKey: getGetUserByUsernameQueryKey(username) }
+    query: { enabled: !!username, queryKey: getGetUserByUsernameQueryKey(username) },
   });
 
   const { data: reviews, isLoading: loadingReviews } = useGetUserReviews(user?.clerkId || "", {
-    query: { enabled: !!user?.clerkId, queryKey: getGetUserReviewsQueryKey(user?.clerkId || "") }
+    query: { enabled: !!user?.clerkId, queryKey: getGetUserReviewsQueryKey(user?.clerkId || "") },
+  });
+
+  const { data: watchedMovies = [] } = useQuery<WatchedMovie[]>({
+    queryKey: ["watched", username],
+    queryFn: async () => {
+      const res = await fetch(`/api/users/${username}/watched`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!username,
+  });
+
+  const { data: overlap } = useQuery<{ commonWatched: WatchedMovie[] }>({
+    queryKey: ["overlap", username],
+    queryFn: async () => {
+      const token = await getToken();
+      const res = await fetch(`/api/users/${username}/overlap`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) return { commonWatched: [] };
+      return res.json();
+    },
+    enabled: !!username,
   });
 
   if (loadingUser) {
@@ -30,6 +90,8 @@ export default function FriendProfile() {
   if (!user) {
     return <div className="text-center py-20 text-gray-500">{t("userNotFound")}</div>;
   }
+
+  const commonWatched = overlap?.commonWatched ?? [];
 
   return (
     <PageTransition className="space-y-10 max-w-5xl mx-auto">
@@ -51,18 +113,50 @@ export default function FriendProfile() {
             {user.bio && <p className="text-gray-300 max-w-2xl">{user.bio}</p>}
           </div>
 
-          <div className="flex gap-6 pb-2 shrink-0 w-full md:w-auto">
-            <div className="text-center bg-black/50 px-4 py-2 rounded-xl border border-gray-800">
-              <div className="text-2xl font-bold text-white">{user.watchedCount || 0}</div>
+          <div className="flex gap-4 pb-2 shrink-0 w-full md:w-auto">
+            <div className="text-center bg-black/50 px-4 py-3 rounded-xl border border-gray-800 min-w-[72px]">
+              <div className="text-2xl font-bold text-white">{watchedMovies.length || user.watchedCount || 0}</div>
               <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">{t("watched")}</div>
             </div>
-            <div className="text-center bg-black/50 px-4 py-2 rounded-xl border border-gray-800">
+            <div className="text-center bg-black/50 px-4 py-3 rounded-xl border border-gray-800 min-w-[72px]">
               <div className="text-2xl font-bold text-white">{user.reviewCount || 0}</div>
               <div className="text-xs text-gray-500 font-medium uppercase tracking-wider">{t("reviewsCount")}</div>
             </div>
+            {commonWatched.length > 0 && (
+              <div className="text-center bg-amber-500/10 px-4 py-3 rounded-xl border border-amber-500/30 min-w-[72px]">
+                <div className="text-2xl font-bold text-amber-400">{commonWatched.length}</div>
+                <div className="text-xs text-amber-600 font-medium uppercase tracking-wider">Ortak</div>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {watchedMovies.length > 0 && (
+        <WatchedScroll movies={watchedMovies} label={t("theirWatchedMovies")} />
+      )}
+
+      {commonWatched.length > 0 && (
+        <div>
+          <h2 className="text-2xl font-bold mb-5 flex items-center gap-2">
+            <Sparkles size={22} className="text-amber-500" />
+            {t("commonMovies")}
+            <span className="text-gray-600 font-normal text-lg">({commonWatched.length})</span>
+          </h2>
+          <div className="flex gap-3 overflow-x-auto pb-3 snap-x">
+            {commonWatched.map(m => (
+              <Link key={m.tmdbId} href={`/movie/${m.tmdbId}`}>
+                <div className="w-28 shrink-0 snap-start group cursor-pointer">
+                  <div className="aspect-[2/3] rounded-xl overflow-hidden bg-gray-900 border border-amber-500/30 group-hover:border-amber-500 group-hover:shadow-[0_4px_16px_rgba(245,158,11,0.3)] transition-all duration-300">
+                    <img src={getPosterUrl(m.posterPath)} alt={m.title} className="w-full h-full object-cover" loading="lazy" />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1.5 line-clamp-1 group-hover:text-gray-300 transition-colors px-0.5">{m.title}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">

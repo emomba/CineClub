@@ -1,15 +1,42 @@
 import { PageTransition } from "@/components/PageTransition";
 import { useGetMe, useUpdateMe, useGetUserReviews, getGetUserReviewsQueryKey, getGetMeQueryKey } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Settings, Save } from "lucide-react";
+import { User, Settings, Save, Film } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Link } from "wouter";
 import { useLang } from "@/lib/i18n";
+import { getPosterUrl } from "@/lib/tmdb";
+
+type WatchedMovie = {
+  tmdbId: number;
+  title: string;
+  posterPath: string | null;
+  releaseYear: number | null;
+  voteAverage: number;
+};
+
+function WatchedScroll({ movies }: { movies: WatchedMovie[] }) {
+  if (!movies.length) return null;
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-3 snap-x scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent">
+      {movies.map(m => (
+        <Link key={m.tmdbId} href={`/movie/${m.tmdbId}`}>
+          <div className="w-28 shrink-0 snap-start group cursor-pointer">
+            <div className="aspect-[2/3] rounded-xl overflow-hidden bg-gray-900 border border-gray-800 group-hover:border-amber-500/50 group-hover:shadow-[0_4px_16px_rgba(245,158,11,0.2)] transition-all duration-300">
+              <img src={getPosterUrl(m.posterPath)} alt={m.title} className="w-full h-full object-cover" loading="lazy" />
+            </div>
+            <p className="text-xs text-gray-500 mt-1.5 line-clamp-1 group-hover:text-gray-300 transition-colors px-0.5">{m.title}</p>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
 
 export default function Profile() {
   const { t } = useLang();
@@ -18,7 +45,17 @@ export default function Profile() {
   const queryClient = useQueryClient();
 
   const { data: reviews } = useGetUserReviews(user?.clerkId || "", {
-    query: { enabled: !!user?.clerkId, queryKey: getGetUserReviewsQueryKey(user?.clerkId || "") }
+    query: { enabled: !!user?.clerkId, queryKey: getGetUserReviewsQueryKey(user?.clerkId || "") },
+  });
+
+  const { data: watchedMovies = [] } = useQuery<WatchedMovie[]>({
+    queryKey: ["watched", user?.username],
+    queryFn: async () => {
+      const res = await fetch(`/api/users/${user!.username}/watched`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!user?.username,
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -30,7 +67,7 @@ export default function Profile() {
         displayName: user.displayName || "",
         username: user.username || "",
         bio: user.bio || "",
-        avatarUrl: user.avatarUrl || ""
+        avatarUrl: user.avatarUrl || "",
       });
     }
   }, [user]);
@@ -40,13 +77,17 @@ export default function Profile() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
         setIsEditing(false);
-        toast.success(t("reviewPosted"));
+        toast.success(t("saveChanges"));
       },
       onError: (err: any) => {
         toast.error(err.response?.data?.message || "Error");
-      }
+      },
     });
   };
+
+  const favoriteMovies = reviews
+    ? [...reviews].sort((a, b) => Number(b.rating) - Number(a.rating)).slice(0, 8)
+    : [];
 
   if (isLoading) {
     return <div className="max-w-3xl mx-auto"><Skeleton className="h-64 w-full bg-[#111] rounded-3xl" /></div>;
@@ -66,7 +107,7 @@ export default function Profile() {
             size="sm"
             onClick={() => { if (isEditing) handleSave(); else setIsEditing(true); }}
             disabled={isEditing && updateMe.isPending}
-            className={`border-gray-700 bg-black/50 backdrop-blur-md text-white hover:bg-gray-800 ${isEditing ? 'border-amber-500 text-amber-500' : ''}`}
+            className={`border-gray-700 bg-black/50 backdrop-blur-md text-white hover:bg-gray-800 ${isEditing ? "border-amber-500 text-amber-500" : ""}`}
           >
             {isEditing ? (
               <><Save size={16} className="mr-2" />{updateMe.isPending ? t("saving") : t("saveChanges")}</>
@@ -118,7 +159,7 @@ export default function Profile() {
         {!isEditing && (
           <div className="grid grid-cols-3 gap-4 mt-10 pt-8 border-t border-gray-800">
             <div className="bg-black/50 rounded-2xl p-4 text-center border border-gray-800/50">
-              <div className="text-3xl font-bold text-white mb-1">{user?.watchedCount || 0}</div>
+              <div className="text-3xl font-bold text-white mb-1">{watchedMovies.length || user?.watchedCount || 0}</div>
               <div className="text-sm text-gray-500 font-medium uppercase tracking-wider">{t("moviesWatched")}</div>
             </div>
             <div className="bg-black/50 rounded-2xl p-4 text-center border border-gray-800/50">
@@ -133,8 +174,47 @@ export default function Profile() {
         )}
       </div>
 
+      {!isEditing && watchedMovies.length > 0 && (
+        <div>
+          <h3 className="text-2xl font-bold mb-5 flex items-center gap-2">
+            <Film size={22} className="text-amber-500" />
+            {t("watchedMoviesSection")}
+            <span className="text-gray-600 font-normal text-lg">({watchedMovies.length})</span>
+          </h3>
+          <WatchedScroll movies={watchedMovies} />
+        </div>
+      )}
+
+      {!isEditing && favoriteMovies.length > 0 && (
+        <div>
+          <h3 className="text-2xl font-bold mb-5 flex items-center gap-2">
+            <span className="text-amber-500">★</span>
+            {t("favoriteMovies")}
+          </h3>
+          <div className="flex gap-3 overflow-x-auto pb-3 snap-x">
+            {favoriteMovies.map(review => (
+              <Link key={review.id} href={`/movie/${review.tmdbId}`}>
+                <div className="w-28 shrink-0 snap-start group cursor-pointer">
+                  <div className="aspect-[2/3] rounded-xl overflow-hidden bg-gray-900 border border-amber-500/30 group-hover:border-amber-500 group-hover:shadow-[0_4px_16px_rgba(245,158,11,0.25)] transition-all duration-300 relative">
+                    {review.moviePosterPath ? (
+                      <img src={`https://image.tmdb.org/t/p/w200${review.moviePosterPath}`} alt={review.movieTitle || ""} className="w-full h-full object-cover" loading="lazy" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-900"><Film size={24} className="text-gray-700" /></div>
+                    )}
+                    <div className="absolute bottom-1 right-1 bg-black/80 rounded-md px-1.5 py-0.5 text-xs font-bold text-amber-400">
+                      ★{review.rating}
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1.5 line-clamp-1 group-hover:text-gray-300 transition-colors px-0.5">{review.movieTitle}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {!isEditing && reviews && reviews.length > 0 && (
-        <div className="pt-8">
+        <div className="pt-4">
           <h3 className="text-2xl font-bold mb-6">{t("yourRecentReviews")}</h3>
           <div className="space-y-4">
             {reviews.slice(0, 5).map(review => (
@@ -147,7 +227,7 @@ export default function Profile() {
                     <h4 className="font-bold text-xl mb-2 group-hover:text-amber-500 transition-colors">{review.movieTitle}</h4>
                     <p className="text-gray-400 line-clamp-2 leading-relaxed">{review.content}</p>
                   </div>
-                  <div className="text-xl font-bold text-amber-500">★ {review.rating}<span className="text-gray-600 text-sm">/10</span></div>
+                  <div className="text-xl font-bold text-amber-500 shrink-0">★ {review.rating}<span className="text-gray-600 text-sm">/10</span></div>
                 </div>
               </Link>
             ))}

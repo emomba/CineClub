@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import { db, usersTable, watchlistsTable, watchlistMoviesTable, reviewsTable, friendshipsTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
 
@@ -105,6 +105,71 @@ router.get("/users/:username", async (req, res): Promise<void> => {
     return;
   }
   res.json(await buildUserProfile(user));
+});
+
+router.get("/users/:username/watched", async (req, res): Promise<void> => {
+  const raw = Array.isArray(req.params.username) ? req.params.username[0] : req.params.username;
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.username, raw));
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+  const [watchedList] = await db
+    .select()
+    .from(watchlistsTable)
+    .where(and(eq(watchlistsTable.userId, user.clerkId), eq(watchlistsTable.isDefault, 1)))
+    .limit(1);
+
+  if (!watchedList) { res.json([]); return; }
+
+  const movies = await db
+    .select()
+    .from(watchlistMoviesTable)
+    .where(eq(watchlistMoviesTable.watchlistId, watchedList.id));
+
+  res.json(movies.map(m => ({
+    tmdbId: m.tmdbId,
+    title: m.title,
+    posterPath: m.posterPath ?? null,
+    releaseYear: m.releaseYear ?? null,
+    voteAverage: parseFloat(m.voteAverage ?? "0"),
+    addedAt: m.addedAt.toISOString(),
+  })));
+});
+
+router.get("/users/:username/overlap", requireAuth, async (req, res): Promise<void> => {
+  const myClerkId = getClerkUserId(req);
+  const raw = Array.isArray(req.params.username) ? req.params.username[0] : req.params.username;
+  const [targetUser] = await db.select().from(usersTable).where(eq(usersTable.username, raw));
+  if (!targetUser) { res.status(404).json({ error: "User not found" }); return; }
+
+  const [myWatchedList] = await db
+    .select().from(watchlistsTable)
+    .where(and(eq(watchlistsTable.userId, myClerkId), eq(watchlistsTable.isDefault, 1)))
+    .limit(1);
+
+  const [theirWatchedList] = await db
+    .select().from(watchlistsTable)
+    .where(and(eq(watchlistsTable.userId, targetUser.clerkId), eq(watchlistsTable.isDefault, 1)))
+    .limit(1);
+
+  if (!myWatchedList || !theirWatchedList) { res.json({ commonWatched: [] }); return; }
+
+  const [myMovies, theirMovies] = await Promise.all([
+    db.select().from(watchlistMoviesTable).where(eq(watchlistMoviesTable.watchlistId, myWatchedList.id)),
+    db.select().from(watchlistMoviesTable).where(eq(watchlistMoviesTable.watchlistId, theirWatchedList.id)),
+  ]);
+
+  const myTmdbIds = new Set(myMovies.map(m => m.tmdbId));
+  const commonWatched = theirMovies
+    .filter(m => myTmdbIds.has(m.tmdbId))
+    .map(m => ({
+      tmdbId: m.tmdbId,
+      title: m.title,
+      posterPath: m.posterPath ?? null,
+      releaseYear: m.releaseYear ?? null,
+      voteAverage: parseFloat(m.voteAverage ?? "0"),
+    }));
+
+  res.json({ commonWatched });
 });
 
 export { getOrCreateUser, buildUserProfile };

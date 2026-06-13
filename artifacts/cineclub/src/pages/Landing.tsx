@@ -19,8 +19,7 @@ export default function Landing() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const currentFlag = LANGS.find(l => l.code === lang)?.flag ?? "🇹🇷";
-  const currentLabel = LANGS.find(l => l.code === lang)?.label ?? "Türkçe";
+  const currentLang = LANGS.find(l => l.code === lang) ?? LANGS[0];
 
   return (
     <div className="min-h-[100dvh] bg-[#050505] text-white flex flex-col items-center justify-center overflow-hidden relative">
@@ -32,8 +31,8 @@ export default function Landing() {
           onClick={() => setLangOpen(v => !v)}
           className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-500/30 text-gray-300 hover:text-white px-3 py-2 rounded-xl text-sm transition-all"
         >
-          <span className="text-base">{currentFlag}</span>
-          <span>{currentLabel}</span>
+          <img src={`https://flagcdn.com/20x15/${currentLang.countryCode}.png`} alt={currentLang.short} className="w-5 h-auto rounded-sm" />
+          <span>{currentLang.label}</span>
           <Globe size={14} className="opacity-60" />
         </button>
         {langOpen && (
@@ -44,7 +43,7 @@ export default function Landing() {
                 onClick={() => { setLang(l.code); setLangOpen(false); }}
                 className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${lang === l.code ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}
               >
-                <span>{l.flag}</span>
+                <img src={`https://flagcdn.com/20x15/${l.countryCode}.png`} alt={l.short} className="w-4 h-auto rounded-sm" />
                 <span>{l.label}</span>
               </button>
             ))}
