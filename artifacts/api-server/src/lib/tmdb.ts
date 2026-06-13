@@ -198,6 +198,21 @@ export async function getGenreList() {
   return { genres: data.genres ?? [] };
 }
 
+async function fetchImdbRating(imdbId: string | null): Promise<number | null> {
+  if (!imdbId) return null;
+  const apiKey = process.env.OMDB_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const res = await fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=${apiKey}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.Response === "False" || !data.imdbRating || data.imdbRating === "N/A") return null;
+    return parseFloat(data.imdbRating);
+  } catch {
+    return null;
+  }
+}
+
 export async function getMovieDetail(tmdbId: number) {
   const [detail, credits, videos] = await Promise.all([
     tmdbFetch(`/movie/${tmdbId}`),
@@ -243,6 +258,9 @@ export async function getMovieDetail(tmdbId: number) {
     } catch {}
   }
 
+  // IMDb rating via OMDb
+  const imdbRating = await fetchImdbRating(detail.imdb_id ?? null);
+
   return {
     tmdbId: detail.id,
     title: detail.title,
@@ -251,6 +269,7 @@ export async function getMovieDetail(tmdbId: number) {
     backdropPath: detail.backdrop_path || null,
     releaseYear: isNaN(releaseYear as number) ? null : releaseYear,
     voteAverage: detail.vote_average ?? 0,
+    imdbRating,
     popularity: detail.popularity ?? 0,
     runtime: detail.runtime || null,
     genres: detail.genres ?? [],

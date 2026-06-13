@@ -6,8 +6,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useLang } from "@/lib/i18n";
 import { useState } from "react";
 import { Link } from "wouter";
-import { Star, ChevronUp, ChevronDown, Calendar } from "lucide-react";
+import { Star, ChevronUp, ChevronDown, Calendar, User } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useUser } from "@clerk/react";
 
 type MovieList = { results: any[]; totalPages: number; page: number };
 
@@ -241,6 +242,16 @@ function MovieGrid({ movies, loading }: { movies: any[] | undefined; loading: bo
 
 export default function Home() {
   const { t } = useLang();
+  const { user } = useUser();
+
+  const { data: myProfile } = useQuery<{ displayName: string | null; username: string | null; avatarUrl: string | null }>({
+    queryKey: ["users", "me"],
+    queryFn: () => fetch("/api/users/me").then(r => r.ok ? r.json() : null),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const displayName = myProfile?.displayName || myProfile?.username || user?.firstName || user?.username || "";
+  const avatarUrl = myProfile?.avatarUrl || user?.imageUrl || null;
 
   // Recent popular — last 6 months only
   const { data: recentPopular, isLoading: loadingRecent } = useQuery<MovieList>({
@@ -303,6 +314,27 @@ export default function Home() {
 
   return (
     <PageTransition className="space-y-14">
+
+      {/* User greeting */}
+      {displayName && (
+        <div className="flex items-center gap-4 pb-2">
+          <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/10 shrink-0 bg-[#111]">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <User size={22} className="text-gray-500" />
+              </div>
+            )}
+          </div>
+          <div>
+            <p className="text-gray-500 text-sm">Hoş geldin,</p>
+            <p className="text-xl font-bold bg-gradient-to-r from-amber-400 to-red-500 bg-clip-text text-transparent leading-tight">
+              {displayName}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Şu An Popüler — featured hero, son 6 ay */}
       <section>

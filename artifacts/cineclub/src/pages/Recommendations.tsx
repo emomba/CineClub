@@ -62,22 +62,22 @@ export default function Recommendations() {
         <div className="flex mt-6 bg-[#111] border border-gray-800 rounded-2xl p-1 gap-1 w-fit">
           <button
             onClick={() => setTab("received")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${tab === "received" ? "bg-amber-500 text-black" : "text-gray-400 hover:text-white"}`}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${tab === "received" ? "bg-gradient-to-r from-amber-500 to-red-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]" : "text-gray-400 hover:text-white"}`}
           >
             <MessageSquare size={15} />
             {t("receivedRecommendations")}
             {unreadCount > 0 && (
-              <span className="bg-red-500 text-white rounded-full text-xs px-1.5 py-0.5 leading-none">{unreadCount}</span>
+              <span className={`rounded-full text-xs px-1.5 py-0.5 leading-none ${tab === "received" ? "bg-black/20 text-black" : "bg-red-500 text-white"}`}>{unreadCount}</span>
             )}
           </button>
           <button
             onClick={() => setTab("sent")}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${tab === "sent" ? "bg-amber-500 text-black" : "text-gray-400 hover:text-white"}`}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${tab === "sent" ? "bg-gradient-to-r from-amber-500 to-red-500 text-black shadow-[0_0_12px_rgba(245,158,11,0.3)]" : "text-gray-400 hover:text-white"}`}
           >
             <Send size={15} />
             {t("sentRecommendations")}
             {sent && sent.length > 0 && (
-              <span className="text-gray-500 text-xs">{sent.length}</span>
+              <span className={`text-xs ${tab === "sent" ? "text-black/60" : "text-gray-500"}`}>{sent.length}</span>
             )}
           </button>
         </div>

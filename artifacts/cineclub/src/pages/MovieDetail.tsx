@@ -285,11 +285,19 @@ export default function MovieDetail() {
                   <span>{Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
                 </div>
               )}
-              <div className="flex items-center gap-1">
-                <Star size={16} className="text-amber-500 fill-amber-500" />
-                <span className="text-white font-bold">{movie.voteAverage?.toFixed(1)}</span>
-                <span className="text-gray-500 text-sm">TMDB</span>
-              </div>
+              {(movie as any).imdbRating != null ? (
+                <div className="flex items-center gap-1 bg-[#f3ce13]/10 border border-[#f3ce13]/30 px-2 py-0.5 rounded-lg">
+                  <span className="font-black text-[#f3ce13] text-sm tracking-tight">IMDb</span>
+                  <span className="text-white font-bold ml-1">{(movie as any).imdbRating.toFixed(1)}</span>
+                  <span className="text-gray-500 text-xs">/10</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <Star size={16} className="text-amber-500 fill-amber-500" />
+                  <span className="text-white font-bold">{movie.voteAverage?.toFixed(1)}</span>
+                  <span className="text-gray-500 text-sm">TMDB</span>
+                </div>
+              )}
             </div>
           </div>
 
