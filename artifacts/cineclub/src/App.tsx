@@ -195,6 +195,14 @@ function Router() {
   );
 }
 
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [location]);
+  return null;
+}
+
 function ClerkProviderWithRoutes() {
   const [, setLocation] = useLocation();
 
@@ -209,6 +217,7 @@ function ClerkProviderWithRoutes() {
       routerReplace={(to: string) => setLocation(stripBase(to), { replace: true })}
     >
       <QueryClientProvider client={queryClient}>
+        <ScrollToTop />
         <AuthTokenSetup />
         <ClerkQueryClientCacheInvalidator />
         <Router />
