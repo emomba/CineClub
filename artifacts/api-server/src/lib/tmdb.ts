@@ -1,4 +1,6 @@
 import { logger } from "./logger";
+import { db, imdbCacheTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
@@ -88,6 +90,9 @@ export async function getPopularMovies(page = 1) {
   };
 }
 
+// TMDB ID pinned at position #1 in the "Şu An Popüler" list
+const PINNED_POPULAR_ID = 1339713; // Saplantı (2026)
+
 export async function getRecentPopularMovies() {
   // Films released in the last 6 months, sorted by popularity — min quality threshold
   const today = new Date();
@@ -96,7 +101,7 @@ export async function getRecentPopularMovies() {
   const dateGte = sixMonthsAgo.toISOString().split("T")[0];
   const dateLte = today.toISOString().split("T")[0];
 
-  const [page1, page2] = await Promise.all([
+  const [page1, page2, pinnedRaw] = await Promise.all([
     tmdbFetch("/discover/movie", {
       sort_by: "popularity.desc",
       "primary_release_date.gte": dateGte,
@@ -113,10 +118,21 @@ export async function getRecentPopularMovies() {
       "vote_average.gte": 6.0,
       page: 2,
     }),
+    tmdbFetch(`/movie/${PINNED_POPULAR_ID}`, {}, "tr-TR").catch(() => null),
   ]);
 
   const seen = new Set<number>();
   const results: any[] = [];
+
+  // Prepend pinned film at position #1
+  if (pinnedRaw && pinnedRaw.id && !pinnedRaw.adult) {
+    const pinned = mapMovie({ ...pinnedRaw, genre_ids: (pinnedRaw.genres ?? []).map((g: any) => g.id) });
+    if (pinned.posterPath) {
+      seen.add(pinned.tmdbId);
+      results.push(pinned);
+    }
+  }
+
   for (const item of [...(page1.results ?? []), ...(page2.results ?? [])]) {
     const m = mapMovie(item);
     if (!seen.has(m.tmdbId) && m.posterPath && !item.adult && !isBlocked(item) && m.voteAverage >= 6.0) {
@@ -273,7 +289,21 @@ async function fetchImdbRating(imdbId: string | null): Promise<number | null> {
 const imdbCache = new Map<number, { imdbId: string | null; imdbRating: number | null }>();
 
 async function fetchImdbForMovie(tmdbId: number): Promise<{ imdbId: string | null; imdbRating: number | null }> {
+  // 1. In-memory cache (fastest)
   if (imdbCache.has(tmdbId)) return imdbCache.get(tmdbId)!;
+
+  // 2. Persistent DB cache — survives server restarts and OMDb rate-limit windows
+  try {
+    const rows = await db.select().from(imdbCacheTable).where(eq(imdbCacheTable.tmdbId, tmdbId)).limit(1);
+    if (rows.length > 0) {
+      const row = rows[0];
+      const result = { imdbId: row.imdbId ?? null, imdbRating: row.imdbRating ? parseFloat(row.imdbRating) : null };
+      imdbCache.set(tmdbId, result);
+      return result;
+    }
+  } catch { /* DB unavailable — fall through to live fetch */ }
+
+  // 3. Live fetch: TMDB external_ids → OMDb
   try {
     const apiKey = process.env.TMDB_API_KEY;
     if (!apiKey) return { imdbId: null, imdbRating: null };
@@ -286,6 +316,19 @@ async function fetchImdbForMovie(tmdbId: number): Promise<{ imdbId: string | nul
     const imdbRating = await fetchImdbRating(imdbId);
     const result = { imdbId, imdbRating };
     imdbCache.set(tmdbId, result);
+
+    // 4. Persist to DB — only when we have a real IMDb rating (not null due to rate-limit)
+    if (imdbRating !== null) {
+      db.insert(imdbCacheTable).values({
+        tmdbId,
+        imdbId,
+        imdbRating: imdbRating.toString(),
+      }).onConflictDoUpdate({
+        target: imdbCacheTable.tmdbId,
+        set: { imdbId, imdbRating: imdbRating.toString(), fetchedAt: new Date() },
+      }).catch(() => { /* ignore write failures */ });
+    }
+
     return result;
   } catch {
     const result = { imdbId: null, imdbRating: null };

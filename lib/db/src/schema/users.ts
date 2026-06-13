@@ -104,3 +104,12 @@ export const notificationsTable = pgTable("notifications", {
 export const insertNotificationSchema = createInsertSchema(notificationsTable).omit({ id: true, createdAt: true });
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notificationsTable.$inferSelect;
+
+// Persistent IMDb rating cache — survives server restarts and OMDb rate-limit windows
+export const imdbCacheTable = pgTable("imdb_cache", {
+  tmdbId: integer("tmdb_id").primaryKey(),
+  imdbId: text("imdb_id"),
+  imdbRating: text("imdb_rating"), // stored as text, null = no rating available
+  fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export type ImdbCacheEntry = typeof imdbCacheTable.$inferSelect;
