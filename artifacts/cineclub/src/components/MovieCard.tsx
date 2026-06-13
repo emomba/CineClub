@@ -16,7 +16,7 @@ export function MovieCard({
   const imdbRating = typeof movie.imdbRating === "number" ? movie.imdbRating : null;
   const tmdbRating = typeof movie.voteAverage === "number" ? movie.voteAverage : parseFloat(String(movie.voteAverage ?? "0"));
   const displayRating = imdbRating ?? (tmdbRating > 0 ? tmdbRating : null);
-  const isImdb = imdbRating !== null;
+  const ratingSource: "imdb" | "tmdb" | null = imdbRating !== null ? "imdb" : (tmdbRating > 0 ? "tmdb" : null);
 
   return (
     <Link href={`/movie/${movie.tmdbId}`}>
@@ -47,7 +47,8 @@ export function MovieCard({
               <div className="flex items-center gap-0.5">
                 <Star size={11} className="text-amber-500 fill-amber-500 shrink-0" />
                 <span className="text-amber-400 font-semibold tabular-nums">{displayRating.toFixed(1)}</span>
-                {isImdb && <span className="text-gray-600 text-[9px] ml-0.5">IMDb</span>}
+                {ratingSource === "imdb" && <span className="text-gray-500 text-[9px] ml-0.5">IMDb</span>}
+                {ratingSource === "tmdb" && <span className="text-gray-500 text-[9px] ml-0.5">TMDB</span>}
               </div>
             )}
           </div>

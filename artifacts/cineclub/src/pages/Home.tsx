@@ -126,9 +126,10 @@ function FeaturedHero({ movies, loading }: { movies: any[] | undefined; loading:
                   <span className="text-amber-400 font-bold">
                     {((film as any).imdbRating ?? film.voteAverage)?.toFixed(1)}
                   </span>
-                  {(film as any).imdbRating != null && (
-                    <span className="text-gray-600 text-[10px]">IMDb</span>
-                  )}
+                  {(film as any).imdbRating != null
+                    ? <span className="text-gray-500 text-[10px]">IMDb</span>
+                    : <span className="text-gray-500 text-[10px]">TMDB</span>
+                  }
                 </span>
               </div>
 
