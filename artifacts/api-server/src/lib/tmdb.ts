@@ -2,6 +2,24 @@ import { logger } from "./logger";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
+// Explicit blocklist — low-quality or unwanted films by TMDB ID
+const BLOCKED_IDS = new Set<number>([
+  11012,   // Ölesiye
+  817581,  // Ölesiye Sevmek
+]);
+
+// Title keyword patterns to exclude (case-insensitive, Turkish low-quality content)
+const BLOCKED_TITLE_PATTERNS = [
+  /^ölesiye/i,
+];
+
+function isBlocked(m: { id?: number; tmdbId?: number; title?: string }): boolean {
+  const id = m.id ?? m.tmdbId ?? 0;
+  if (BLOCKED_IDS.has(id)) return true;
+  const title = m.title ?? "";
+  return BLOCKED_TITLE_PATTERNS.some(p => p.test(title));
+}
+
 async function tmdbFetch(path: string, params: Record<string, string | number> = {}): Promise<any> {
   const apiKey = process.env.TMDB_API_KEY;
   if (!apiKey) throw new Error("TMDB_API_KEY not set");
@@ -51,7 +69,7 @@ export async function searchMovies(q: string, page = 1) {
 export async function getPopularMovies(page = 1) {
   const data = await tmdbFetch("/movie/popular", { page });
   return {
-    results: (data.results ?? []).filter((m: any) => !m.adult).map(mapMovie),
+    results: (data.results ?? []).filter((m: any) => !m.adult && !isBlocked(m)).map(mapMovie),
     totalPages: data.total_pages ?? 1,
     page: data.page ?? 1,
   };
@@ -88,7 +106,7 @@ export async function getRecentPopularMovies() {
   const results: any[] = [];
   for (const item of [...(page1.results ?? []), ...(page2.results ?? [])]) {
     const m = mapMovie(item);
-    if (!seen.has(m.tmdbId) && m.posterPath && !item.adult && m.voteAverage >= 6.0) {
+    if (!seen.has(m.tmdbId) && m.posterPath && !item.adult && !isBlocked(item) && m.voteAverage >= 6.0) {
       seen.add(m.tmdbId);
       results.push(m);
     }
@@ -100,7 +118,7 @@ export async function getRecentPopularMovies() {
 export async function getTopRatedMovies(page = 1) {
   const data = await tmdbFetch("/movie/top_rated", { page });
   return {
-    results: (data.results ?? []).filter((m: any) => !m.adult).map(mapMovie),
+    results: (data.results ?? []).filter((m: any) => !m.adult && !isBlocked(m)).map(mapMovie),
     totalPages: data.total_pages ?? 1,
     page: data.page ?? 1,
   };
@@ -131,6 +149,7 @@ export async function getTrendingMovies() {
       !seen.has(mapped.tmdbId) &&
       mapped.posterPath &&
       item.adult !== true &&
+      !isBlocked(item) &&
       mapped.voteAverage >= 6.5
     ) {
       seen.add(mapped.tmdbId);
@@ -160,7 +179,7 @@ export async function getClassicMovies(page = 1) {
     page,
   });
   return {
-    results: (data.results ?? []).filter((m: any) => !m.adult).map(mapMovie),
+    results: (data.results ?? []).filter((m: any) => !m.adult && !isBlocked(m)).map(mapMovie),
     totalPages: data.total_pages ?? 1,
     page: data.page ?? 1,
   };
@@ -173,7 +192,7 @@ export async function getMoviesByGenre(genreId: number, page = 1, sortBy = "popu
     sort_by: sortBy,
   });
   return {
-    results: (data.results ?? []).filter((m: any) => !m.adult).map(mapMovie),
+    results: (data.results ?? []).filter((m: any) => !m.adult && !isBlocked(m)).map(mapMovie),
     totalPages: data.total_pages ?? 1,
     page: data.page ?? 1,
   };
@@ -187,7 +206,7 @@ export async function getMoviesByLanguage(language: string, page = 1) {
     page,
   });
   return {
-    results: (data.results ?? []).filter((m: any) => !m.adult).map(mapMovie),
+    results: (data.results ?? []).filter((m: any) => !m.adult && !isBlocked(m)).map(mapMovie),
     totalPages: data.total_pages ?? 1,
     page: data.page ?? 1,
   };
