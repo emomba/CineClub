@@ -224,10 +224,6 @@ export default function MovieDetail() {
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent" />
-        <div 
-          className="absolute inset-0 mix-blend-color opacity-30" 
-          style={{ backgroundColor: dominantColor }}
-        />
       </div>
 
       <div className="relative z-10 pt-[20vh] md:pt-[30vh] flex flex-col md:flex-row gap-8 items-start">

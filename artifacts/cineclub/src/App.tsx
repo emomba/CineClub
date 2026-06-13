@@ -1,4 +1,5 @@
 import { Switch, Route, Redirect, Router as WouterRouter, useLocation } from "wouter";
+import { LangProvider } from "@/lib/i18n";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -195,12 +196,14 @@ function ClerkProviderWithRoutes() {
 
 function App() {
   return (
-    <TooltipProvider>
-      <WouterRouter base={basePath}>
-        <ClerkProviderWithRoutes />
-      </WouterRouter>
-      <Toaster />
-    </TooltipProvider>
+    <LangProvider>
+      <TooltipProvider>
+        <WouterRouter base={basePath}>
+          <ClerkProviderWithRoutes />
+        </WouterRouter>
+        <Toaster />
+      </TooltipProvider>
+    </LangProvider>
   );
 }
 

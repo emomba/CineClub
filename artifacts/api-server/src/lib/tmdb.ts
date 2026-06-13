@@ -56,6 +56,15 @@ export async function getPopularMovies(page = 1) {
   };
 }
 
+export async function getTopRatedMovies(page = 1) {
+  const data = await tmdbFetch("/movie/top_rated", { page });
+  return {
+    results: (data.results ?? []).map(mapMovie),
+    totalPages: data.total_pages ?? 1,
+    page: data.page ?? 1,
+  };
+}
+
 export async function getTrendingMovies() {
   const data = await tmdbFetch("/trending/movie/week");
   return {
@@ -70,6 +79,20 @@ export async function getMoviesByGenre(genreId: number, page = 1, sortBy = "popu
     with_genres: genreId,
     page,
     sort_by: sortBy,
+  });
+  return {
+    results: (data.results ?? []).map(mapMovie),
+    totalPages: data.total_pages ?? 1,
+    page: data.page ?? 1,
+  };
+}
+
+export async function getMoviesByLanguage(language: string, page = 1) {
+  const data = await tmdbFetch("/discover/movie", {
+    with_original_language: language,
+    sort_by: "popularity.desc",
+    "vote_count.gte": 100,
+    page,
   });
   return {
     results: (data.results ?? []).map(mapMovie),
@@ -138,4 +161,23 @@ export async function getMoviesByIds(tmdbIds: number[]) {
     ),
   );
   return results.filter(Boolean);
+}
+
+export async function getRandomMoviePick(): Promise<ReturnType<typeof mapMovie>> {
+  // Pick a random page between 1-15 and a random movie from that page
+  const randomPage = Math.floor(Math.random() * 15) + 1;
+  // Alternate between popular and top-rated for variety
+  const useTopRated = Math.random() > 0.5;
+  const data = useTopRated
+    ? await tmdbFetch("/movie/top_rated", { page: randomPage })
+    : await tmdbFetch("/movie/popular", { page: randomPage });
+
+  const movies = (data.results ?? []).map(mapMovie).filter((m: any) => m.posterPath);
+  if (movies.length === 0) {
+    // Fallback to page 1 popular
+    const fallback = await tmdbFetch("/movie/popular", { page: 1 });
+    const fallbackMovies = (fallback.results ?? []).map(mapMovie);
+    return fallbackMovies[Math.floor(Math.random() * fallbackMovies.length)];
+  }
+  return movies[Math.floor(Math.random() * movies.length)];
 }

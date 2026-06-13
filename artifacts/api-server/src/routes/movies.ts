@@ -5,12 +5,15 @@ import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
   searchMovies,
   getPopularMovies,
+  getTopRatedMovies,
   getTrendingMovies,
   getMoviesByGenre,
+  getMoviesByLanguage,
   getGenreList,
   getMovieDetail,
   getMovieRecommendations,
   getMoviesByIds,
+  getRandomMoviePick,
 } from "../lib/tmdb";
 
 const router: IRouter = Router();
@@ -34,6 +37,19 @@ router.get("/movies/popular", async (req, res): Promise<void> => {
 
 router.get("/movies/trending", async (req, res): Promise<void> => {
   const data = await getTrendingMovies();
+  res.json(data);
+});
+
+router.get("/movies/top-rated", async (req, res): Promise<void> => {
+  const page = parseInt(String(req.query.page ?? "1"), 10);
+  const data = await getTopRatedMovies(page);
+  res.json(data);
+});
+
+router.get("/movies/language/:lang", async (req, res): Promise<void> => {
+  const lang = String(req.params.lang);
+  const page = parseInt(String(req.query.page ?? "1"), 10);
+  const data = await getMoviesByLanguage(lang, page);
   res.json(data);
 });
 
@@ -125,7 +141,7 @@ router.get("/random-pick", requireAuth, async (req, res): Promise<void> => {
   }
 
   if (genreId) {
-    const data = await getMoviesByGenre(genreId, Math.ceil(Math.random() * 3));
+    const data = await getMoviesByGenre(genreId, Math.ceil(Math.random() * 5));
     const movies = data.results;
     if (movies.length === 0) {
       res.status(404).json({ error: "No movies found" });
@@ -136,10 +152,9 @@ router.get("/random-pick", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  // Fall back to trending
-  const data = await getTrendingMovies();
-  const pick = data.results[Math.floor(Math.random() * data.results.length)];
-  res.json(pick);
+  // Truly random pick from popular/top-rated with random page
+  const movie = await getRandomMoviePick();
+  res.json(movie);
 });
 
 export default router;
