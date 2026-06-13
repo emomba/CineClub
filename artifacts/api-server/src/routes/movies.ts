@@ -5,6 +5,7 @@ import { requireAuth, getClerkUserId } from "../lib/auth";
 import {
   searchMovies,
   getPopularMovies,
+  getRecentPopularMovies,
   getTopRatedMovies,
   getClassicMovies,
   getTrendingMovies,
@@ -31,6 +32,11 @@ router.get("/movies/search", async (req, res): Promise<void> => {
 router.get("/movies/popular", async (req, res): Promise<void> => {
   const page = parseInt(String(req.query.page ?? "1"), 10);
   const data = await getPopularMovies(page);
+  res.json(data);
+});
+
+router.get("/movies/recent-popular", async (req, res): Promise<void> => {
+  const data = await getRecentPopularMovies();
   res.json(data);
 });
 

@@ -57,6 +57,44 @@ export async function getPopularMovies(page = 1) {
   };
 }
 
+export async function getRecentPopularMovies() {
+  // Films released in the last 6 months, sorted by popularity
+  const today = new Date();
+  const sixMonthsAgo = new Date(today);
+  sixMonthsAgo.setMonth(today.getMonth() - 6);
+  const dateGte = sixMonthsAgo.toISOString().split("T")[0];
+  const dateLte = today.toISOString().split("T")[0];
+
+  const [page1, page2] = await Promise.all([
+    tmdbFetch("/discover/movie", {
+      sort_by: "popularity.desc",
+      "primary_release_date.gte": dateGte,
+      "primary_release_date.lte": dateLte,
+      "vote_count.gte": 20,
+      page: 1,
+    }),
+    tmdbFetch("/discover/movie", {
+      sort_by: "popularity.desc",
+      "primary_release_date.gte": dateGte,
+      "primary_release_date.lte": dateLte,
+      "vote_count.gte": 20,
+      page: 2,
+    }),
+  ]);
+
+  const seen = new Set<number>();
+  const results: any[] = [];
+  for (const item of [...(page1.results ?? []), ...(page2.results ?? [])]) {
+    const m = mapMovie(item);
+    if (!seen.has(m.tmdbId) && m.posterPath) {
+      seen.add(m.tmdbId);
+      results.push(m);
+    }
+  }
+
+  return { results: results.slice(0, 20), totalPages: 1, page: 1 };
+}
+
 export async function getTopRatedMovies(page = 1) {
   const data = await tmdbFetch("/movie/top_rated", { page });
   return {
