@@ -124,7 +124,7 @@ export async function getTrendingMovies() {
     ...(intlData.results ?? []),
   ]) {
     const mapped = mapMovie(item);
-    if (!seen.has(mapped.tmdbId) && mapped.posterPath) {
+    if (!seen.has(mapped.tmdbId) && mapped.posterPath && item.adult !== true) {
       seen.add(mapped.tmdbId);
       combined.push(mapped);
     }
@@ -137,7 +137,7 @@ export async function getTrendingMovies() {
   }
 
   return {
-    results: combined.slice(0, 40),
+    results: combined.slice(0, 20),
     totalPages: 1,
     page: 1,
   };

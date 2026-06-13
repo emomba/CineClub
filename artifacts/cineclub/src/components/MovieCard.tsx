@@ -9,7 +9,7 @@ export function MovieCard({ movie, showRating = true }: { movie: MovieSummary, s
     <Link href={`/movie/${movie.tmdbId}`}>
       <motion.div 
         whileHover={{ scale: 1.05, y: -5 }}
-        className="group relative rounded-xl overflow-hidden cursor-pointer bg-[#111] border border-transparent hover:border-amber-500/50 hover:shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-all duration-300 w-[160px] md:w-[200px] flex-shrink-0"
+        className="group relative z-0 hover:z-10 rounded-xl overflow-hidden cursor-pointer bg-[#111] border border-transparent hover:border-amber-500/50 hover:shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-all duration-300 w-[160px] md:w-[200px] flex-shrink-0"
       >
         <div className="aspect-[2/3] w-full relative">
           <img 

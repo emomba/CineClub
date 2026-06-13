@@ -251,10 +251,7 @@ export default function Home() {
       {/* Şu An Popüler — featured hero, son 6 ay */}
       <section>
         <div className="flex items-center justify-between mb-5">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">{t("popularRightNow")}</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Son 6 ayda vizyona girenler</p>
-          </div>
+          <h2 className="text-2xl font-bold tracking-tight">{t("popularRightNow")}</h2>
           {recentPopular && <span className="text-xs text-gray-600">{recentPopular.results.length} film</span>}
         </div>
         <FeaturedHero movies={recentPopular?.results} loading={loadingRecent} />

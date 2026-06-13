@@ -325,16 +325,16 @@ export default function MovieDetail() {
             </div>
           )}
 
-          {/* Cast — her oyuncu kendi sayfasına gider */}
+          {/* Cast — grid, alta doğru devam eder, sağa taşmaz */}
           {movie.cast && movie.cast.length > 0 && (
             <div className="pt-6">
               <h3 className="text-xl font-bold mb-4">{t("cast")}</h3>
-              <div className="flex gap-4 overflow-x-auto pb-4 snap-x hide-scrollbar">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-3">
                 {movie.cast.slice(0, 12).map((person: any) => (
                   <button
                     key={person.id}
                     onClick={() => setLocation(`/actor/${person.id}`)}
-                    className="w-[120px] shrink-0 snap-start text-left group focus:outline-none"
+                    className="text-left group focus:outline-none"
                   >
                     <div className="aspect-[2/3] rounded-xl overflow-hidden bg-[#111] mb-2 border border-gray-800 group-hover:border-amber-500/50 transition-colors group-hover:scale-105 transform duration-200">
                       <img
@@ -345,7 +345,7 @@ export default function MovieDetail() {
                       />
                     </div>
                     <div className="font-medium text-sm line-clamp-1 group-hover:text-amber-500 transition-colors">{person.name}</div>
-                    <div className="text-xs text-gray-500 line-clamp-1">{person.character}</div>
+                    <div className="text-xs text-gray-500 line-clamp-2">{person.character}</div>
                   </button>
                 ))}
               </div>
