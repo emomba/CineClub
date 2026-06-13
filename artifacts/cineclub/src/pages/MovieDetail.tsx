@@ -422,13 +422,15 @@ export default function MovieDetail() {
                   <div className="space-y-2">
                     <Label className="text-gray-400 text-sm">{t("recommendTo")}</Label>
                     <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
-                      {friends && friends.length > 0 ? friends.map((f: any) => (
-                        <div key={f.clerkId}
-                          onClick={() => setRecFriendId(f.clerkId)}
-                          className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors border ${recFriendId === f.clerkId ? "bg-emerald-600/20 border-emerald-500/50" : "border-transparent hover:bg-white/5"}`}>
+                      {friends && friends.length > 0 ? friends.map((f: any) => {
+                        const u = f.otherUser ?? f;
+                        return (
+                        <div key={u.clerkId}
+                          onClick={() => setRecFriendId(u.clerkId)}
+                          className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors border ${recFriendId === u.clerkId ? "bg-emerald-600/20 border-emerald-500/50" : "border-transparent hover:bg-white/5"}`}>
                           <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-800 shrink-0">
-                            {f.avatarUrl ? (
-                              <img src={f.avatarUrl} alt={f.displayName} className="w-full h-full object-cover" />
+                            {u.avatarUrl ? (
+                              <img src={u.avatarUrl} alt={u.displayName} className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
                                 <User size={14} className="text-gray-500" />
@@ -436,14 +438,15 @@ export default function MovieDetail() {
                             )}
                           </div>
                           <div>
-                            <div className="font-medium text-sm text-white">{f.displayName || f.username}</div>
-                            <div className="text-xs text-gray-500">@{f.username}</div>
+                            <div className="font-medium text-sm text-white">{u.displayName || u.username}</div>
+                            <div className="text-xs text-gray-500">@{u.username}</div>
                           </div>
-                          {recFriendId === f.clerkId && (
+                          {recFriendId === u.clerkId && (
                             <Check size={16} className="text-emerald-400 ml-auto" />
                           )}
                         </div>
-                      )) : (
+                        );
+                      }) : (
                         <p className="text-gray-500 text-sm py-2">{t("noFriends")}</p>
                       )}
                     </div>
