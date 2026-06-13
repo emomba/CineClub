@@ -20,9 +20,11 @@ import {
   getRandomMoviePick,
   enrichMoviesWithImdb,
   sortByImdbRating,
+  catchupImdbRatings,
 } from "../lib/tmdb";
 
 const router: IRouter = Router();
+
 
 router.get("/movies/search", async (req, res): Promise<void> => {
   const q = String(req.query.q ?? "");
