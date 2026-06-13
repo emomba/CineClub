@@ -253,17 +253,17 @@ export default function MovieDetail() {
   const backdropUrl = getBackdropUrl(movie.backdropPath);
 
   return (
-    <PageTransition className="pb-20">
-      {/* Backdrop */}
-      <div className="absolute top-0 left-0 right-0 h-[60vh] z-0 overflow-hidden pointer-events-none">
+    <PageTransition className="relative pb-20">
+      {/* Backdrop — absolute is relative to this PageTransition (which is now `relative`) */}
+      <div className="absolute top-0 left-0 right-0 h-[55vh] z-0 overflow-hidden pointer-events-none">
         {backdropUrl && (
-          <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
+          <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-25"
             style={{ backgroundImage: `url(${backdropUrl})` }} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] to-transparent" />
       </div>
 
-      <div className="relative z-10 pt-[20vh] md:pt-[30vh] flex flex-col md:flex-row gap-8 items-start">
+      <div className="relative z-10 pt-[20vh] md:pt-[28vh] flex flex-col md:flex-row gap-8 items-start">
         {/* Poster */}
         <div className="w-[200px] md:w-[300px] shrink-0 rounded-2xl overflow-hidden border-2 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
           <img src={getPosterUrl(movie.posterPath)} alt={movie.title} className="w-full h-auto object-cover" />
@@ -295,9 +295,13 @@ export default function MovieDetail() {
 
           <div className="flex flex-wrap gap-2">
             {movie.genres.map((g: any) => (
-              <span key={g.id} className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-sm font-medium border border-white/5">
+              <button
+                key={g.id}
+                onClick={() => setLocation(`/search?genre=${g.id}&genreName=${encodeURIComponent(g.name)}`)}
+                className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-sm font-medium border border-white/5 hover:bg-gradient-to-r hover:from-amber-500 hover:to-red-500 hover:text-black hover:border-transparent transition-all cursor-pointer"
+              >
                 {g.name}
-              </span>
+              </button>
             ))}
           </div>
 
@@ -305,9 +309,9 @@ export default function MovieDetail() {
           <div className="flex flex-wrap gap-4 pt-2">
             <Dialog>
               <DialogTrigger asChild>
-                <button className="flex items-center gap-2 bg-[#111] hover:bg-[#222] border border-gray-800 text-white font-medium px-6 py-3 rounded-xl transition-colors">
+                <button className="flex items-center gap-2 bg-[#111] border border-gray-800 text-white font-medium px-6 py-3 rounded-xl transition-all hover:bg-gradient-to-r hover:from-amber-500 hover:to-red-500 hover:text-black hover:border-transparent">
                   {status?.watchlistIds && status.watchlistIds.length > 0 ? (
-                    <><Check size={20} className="text-green-500" /><span>{t("inWatchlist")}</span></>
+                    <><Check size={20} className="text-green-500 group-hover:text-black" /><span>{t("inWatchlist")}</span></>
                   ) : (
                     <><Plus size={20} /><span>{t("addToList")}</span></>
                   )}
@@ -337,7 +341,7 @@ export default function MovieDetail() {
 
             <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
               <DialogTrigger asChild>
-                <button className="flex items-center gap-2 bg-[#111] hover:bg-[#222] border border-gray-800 text-white font-medium px-6 py-3 rounded-xl transition-colors">
+                <button className="flex items-center gap-2 bg-[#111] border border-gray-800 text-white font-medium px-6 py-3 rounded-xl transition-all hover:bg-gradient-to-r hover:from-amber-500 hover:to-red-500 hover:text-black hover:border-transparent">
                   <MessageSquare size={20} />
                   <span>{status?.hasReview ? t("editReview") : t("writeReview")}</span>
                 </button>

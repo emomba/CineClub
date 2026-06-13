@@ -58,7 +58,7 @@ export async function getPopularMovies(page = 1) {
 }
 
 export async function getRecentPopularMovies() {
-  // Films released in the last 6 months, sorted by popularity
+  // Films released in the last 6 months, sorted by popularity — min quality threshold
   const today = new Date();
   const sixMonthsAgo = new Date(today);
   sixMonthsAgo.setMonth(today.getMonth() - 6);
@@ -70,14 +70,16 @@ export async function getRecentPopularMovies() {
       sort_by: "popularity.desc",
       "primary_release_date.gte": dateGte,
       "primary_release_date.lte": dateLte,
-      "vote_count.gte": 20,
+      "vote_count.gte": 200,
+      "vote_average.gte": 6.0,
       page: 1,
     }),
     tmdbFetch("/discover/movie", {
       sort_by: "popularity.desc",
       "primary_release_date.gte": dateGte,
       "primary_release_date.lte": dateLte,
-      "vote_count.gte": 20,
+      "vote_count.gte": 200,
+      "vote_average.gte": 6.0,
       page: 2,
     }),
   ]);
@@ -86,7 +88,7 @@ export async function getRecentPopularMovies() {
   const results: any[] = [];
   for (const item of [...(page1.results ?? []), ...(page2.results ?? [])]) {
     const m = mapMovie(item);
-    if (!seen.has(m.tmdbId) && m.posterPath && !item.adult) {
+    if (!seen.has(m.tmdbId) && m.posterPath && !item.adult && m.voteAverage >= 6.0) {
       seen.add(m.tmdbId);
       results.push(m);
     }
@@ -105,13 +107,14 @@ export async function getTopRatedMovies(page = 1) {
 }
 
 export async function getTrendingMovies() {
-  // Fetch trending + popular in parallel to get a diverse global mix
+  // Fetch trending + popular in parallel — quality-filtered global mix
   const [trendingData, popularData, intlData] = await Promise.all([
     tmdbFetch("/trending/movie/week"),
     tmdbFetch("/movie/popular", { page: 2 }),
     tmdbFetch("/discover/movie", {
       sort_by: "popularity.desc",
-      "vote_count.gte": 200,
+      "vote_count.gte": 500,
+      "vote_average.gte": 6.5,
       page: 1,
     }),
   ]);
@@ -124,7 +127,12 @@ export async function getTrendingMovies() {
     ...(intlData.results ?? []),
   ]) {
     const mapped = mapMovie(item);
-    if (!seen.has(mapped.tmdbId) && mapped.posterPath && item.adult !== true) {
+    if (
+      !seen.has(mapped.tmdbId) &&
+      mapped.posterPath &&
+      item.adult !== true &&
+      mapped.voteAverage >= 6.5
+    ) {
       seen.add(mapped.tmdbId);
       combined.push(mapped);
     }
