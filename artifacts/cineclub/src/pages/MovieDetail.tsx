@@ -1,7 +1,6 @@
 import { useParams, useLocation } from "wouter";
 import { PageTransition } from "@/components/PageTransition";
 import {
-  useGetMovie,
   useGetMovieReviews,
   useGetMovieUserStatus,
   useGetWatchlists,
@@ -131,8 +130,13 @@ export default function MovieDetail() {
   const tmdbId = Number(params.tmdbId);
   const queryClient = useQueryClient();
 
-  const { data: movie, isLoading } = useGetMovie(tmdbId, {
-    query: { enabled: !!tmdbId, queryKey: [`/api/movies/${tmdbId}`] }
+  const { lang } = useLang();
+
+  const { data: movie, isLoading } = useQuery({
+    queryKey: [`/api/movies/${tmdbId}`, lang],
+    queryFn: () => fetch(`/api/movies/${tmdbId}?lang=${lang}`).then(r => r.json()),
+    enabled: !!tmdbId,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: reviews } = useGetMovieReviews(tmdbId, {
@@ -285,12 +289,23 @@ export default function MovieDetail() {
                   <span>{Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
                 </div>
               )}
-              {(movie as any).imdbRating != null && (
-                <div className="flex items-center gap-1 bg-[#f3ce13]/10 border border-[#f3ce13]/30 px-2 py-0.5 rounded-lg">
+              {(movie as any).imdbId && (
+                <a
+                  href={`https://www.imdb.com/title/${(movie as any).imdbId}/`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 bg-[#f3ce13]/10 border border-[#f3ce13]/30 px-2 py-0.5 rounded-lg hover:bg-[#f3ce13]/20 hover:border-[#f3ce13]/50 transition-colors"
+                >
                   <span className="font-black text-[#f3ce13] text-sm tracking-tight">IMDb</span>
-                  <span className="text-white font-bold ml-1">{(movie as any).imdbRating.toFixed(1)}</span>
-                  <span className="text-gray-500 text-xs">/10</span>
-                </div>
+                  {(movie as any).imdbRating != null ? (
+                    <>
+                      <span className="text-white font-bold ml-1">{(movie as any).imdbRating.toFixed(1)}</span>
+                      <span className="text-gray-500 text-xs">/10</span>
+                    </>
+                  ) : (
+                    <span className="text-gray-400 text-xs ml-1">↗</span>
+                  )}
+                </a>
               )}
               {movie.voteAverage > 0 && (
                 <div className="flex items-center gap-1 bg-white/5 border border-white/10 px-2 py-0.5 rounded-lg">

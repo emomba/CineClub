@@ -125,7 +125,8 @@ router.get("/movies/:tmdbId/user-status", requireAuth, async (req, res): Promise
 router.get("/movies/:tmdbId", async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.tmdbId) ? req.params.tmdbId[0] : req.params.tmdbId;
   const tmdbId = parseInt(raw, 10);
-  const data = await getMovieDetail(tmdbId);
+  const lang = String(req.query.lang ?? "tr");
+  const data = await getMovieDetail(tmdbId, lang);
   res.json(data);
 });
 

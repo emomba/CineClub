@@ -20,13 +20,26 @@ function isBlocked(m: { id?: number; tmdbId?: number; title?: string }): boolean
   return BLOCKED_TITLE_PATTERNS.some(p => p.test(title));
 }
 
-async function tmdbFetch(path: string, params: Record<string, string | number> = {}): Promise<any> {
+// Map app lang codes → TMDB language strings
+const TMDB_LANG: Record<string, string> = {
+  tr: "tr-TR",
+  en: "en-US",
+  de: "de-DE",
+  es: "es-ES",
+  fr: "fr-FR",
+};
+
+async function tmdbFetch(
+  path: string,
+  params: Record<string, string | number> = {},
+  lang = "tr-TR",
+): Promise<any> {
   const apiKey = process.env.TMDB_API_KEY;
   if (!apiKey) throw new Error("TMDB_API_KEY not set");
 
   const url = new URL(`${TMDB_BASE}${path}`);
   url.searchParams.set("api_key", apiKey);
-  url.searchParams.set("language", "tr-TR");
+  url.searchParams.set("language", lang);
   url.searchParams.set("include_adult", "false");
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
@@ -241,11 +254,14 @@ async function fetchImdbRating(imdbId: string | null): Promise<number | null> {
   }
 }
 
-export async function getMovieDetail(tmdbId: number) {
+export async function getMovieDetail(tmdbId: number, langCode = "tr") {
+  const tmdbLang = TMDB_LANG[langCode] ?? "tr-TR";
+  const fallbackLang = tmdbLang === "en-US" ? null : "en-US";
+
   const [detail, credits, videos] = await Promise.all([
-    tmdbFetch(`/movie/${tmdbId}`),
-    tmdbFetch(`/movie/${tmdbId}/credits`),
-    tmdbFetch(`/movie/${tmdbId}/videos`),
+    tmdbFetch(`/movie/${tmdbId}`, {}, tmdbLang),
+    tmdbFetch(`/movie/${tmdbId}/credits`, {}, tmdbLang),
+    tmdbFetch(`/movie/${tmdbId}/videos`, {}, tmdbLang),
   ]);
 
   const releaseYear = detail.release_date
@@ -259,35 +275,32 @@ export async function getMovieDetail(tmdbId: number) {
     profilePath: c.profile_path || null,
   }));
 
-  // Trailer: prefer TR, fall back to any YouTube trailer
+  // Trailer: prefer requested lang, fall back to EN
   let trailer = (videos.results ?? []).find(
     (v: any) => v.type === "Trailer" && v.site === "YouTube",
   );
-  if (!trailer) {
-    // Retry without language restriction for English trailer
+  if (!trailer && fallbackLang) {
     try {
-      const enVideos = await fetch(
-        `https://api.themoviedb.org/3/movie/${tmdbId}/videos?api_key=${process.env.TMDB_API_KEY}&language=en-US`
-      ).then(r => r.json());
+      const enVideos = await tmdbFetch(`/movie/${tmdbId}/videos`, {}, "en-US");
       trailer = (enVideos.results ?? []).find(
         (v: any) => v.type === "Trailer" && v.site === "YouTube",
       );
     } catch {}
   }
 
-  // Overview: fall back to English if TR is empty
+  // Overview: fall back to English if requested lang has no overview
   let overview = detail.overview ?? "";
-  if (!overview.trim()) {
+  if (!overview.trim() && fallbackLang) {
     try {
-      const enDetail = await fetch(
-        `https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${process.env.TMDB_API_KEY}&language=en-US`
-      ).then(r => r.json());
+      const enDetail = await tmdbFetch(`/movie/${tmdbId}`, {}, "en-US");
       overview = enDetail.overview ?? "";
     } catch {}
   }
 
-  // IMDb rating via OMDb
-  const imdbRating = await fetchImdbRating(detail.imdb_id ?? null);
+  const imdbId: string | null = detail.imdb_id ?? null;
+
+  // IMDb rating via OMDb (shows when API key is valid)
+  const imdbRating = await fetchImdbRating(imdbId);
 
   return {
     tmdbId: detail.id,
@@ -298,6 +311,7 @@ export async function getMovieDetail(tmdbId: number) {
     releaseYear: isNaN(releaseYear as number) ? null : releaseYear,
     voteAverage: detail.vote_average ?? 0,
     imdbRating,
+    imdbId,
     popularity: detail.popularity ?? 0,
     runtime: detail.runtime || null,
     genres: detail.genres ?? [],
