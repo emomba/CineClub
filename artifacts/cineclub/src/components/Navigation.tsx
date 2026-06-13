@@ -53,7 +53,6 @@ export function Sidebar() {
   const currentLang = LANGS.find(l => l.code === lang) ?? LANGS[0];
 
   const avatarUrl = user?.imageUrl ?? null;
-  const displayName = user?.fullName || user?.username || "Kullanıcı";
   const username = user?.username ?? "";
 
   return (
@@ -100,16 +99,15 @@ export function Sidebar() {
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-800 border border-gray-700 shrink-0">
               {avatarUrl ? (
-                <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+                <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-sm">
-                  {displayName.charAt(0).toUpperCase()}
+                  {username.charAt(0).toUpperCase() || "?"}
                 </div>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-sm text-white group-hover:text-amber-400 transition-colors truncate">{displayName}</div>
-              {username && <div className="text-xs text-gray-500 truncate">@{username}</div>}
+              {username && <div className="font-medium text-sm text-white group-hover:text-amber-400 transition-colors truncate">@{username}</div>}
             </div>
           </div>
         </div>
