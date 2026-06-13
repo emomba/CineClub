@@ -1,6 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { getRecentPopularMovies, getTrendingMovies, getTopRatedMovies, getClassicMovies, enrichMoviesWithImdb } from "./lib/tmdb";
+import { getRecentPopularMovies, getTrendingMovies, getTopRatedMovies, getClassicMovies, enrichMoviesWithImdb, catchupImdbRatings } from "./lib/tmdb";
 
 const rawPort = process.env["PORT"];
 
@@ -66,4 +66,15 @@ app.listen(port, (err) => {
       logger.warn({ err }, "IMDb pre-seed failed (non-fatal)");
     }
   }, 3000); // 3 s after startup so the server is fully warm
+
+  // Hourly catchup: fill OMDb ratings for films that have imdbId but no rating yet.
+  // This runs automatically when OMDb rate-limit resets — no server restart needed.
+  setInterval(async () => {
+    try {
+      const filled = await catchupImdbRatings();
+      if (filled > 0) logger.info({ filled }, "IMDb hourly catchup: filled ratings");
+    } catch (err) {
+      logger.warn({ err }, "IMDb hourly catchup failed (non-fatal)");
+    }
+  }, 60 * 60 * 1000); // every hour
 });

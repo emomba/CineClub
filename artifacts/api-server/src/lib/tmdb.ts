@@ -1,6 +1,6 @@
 import { logger } from "./logger";
 import { db, imdbCacheTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, isNull, isNotNull, and } from "drizzle-orm";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
@@ -286,24 +286,40 @@ async function fetchImdbRating(imdbId: string | null): Promise<number | null> {
 }
 
 // In-memory cache: tmdbId → { imdbId, imdbRating }
+// Only entries WITH a real imdbRating are stored — null-rating entries are not
+// cached in memory so they retry OMDb on the next request once the circuit opens.
 const imdbCache = new Map<number, { imdbId: string | null; imdbRating: number | null }>();
 
 async function fetchImdbForMovie(tmdbId: number): Promise<{ imdbId: string | null; imdbRating: number | null }> {
-  // 1. In-memory cache (fastest)
-  if (imdbCache.has(tmdbId)) return imdbCache.get(tmdbId)!;
+  // 1. In-memory cache — only populated for confirmed ratings
+  const mem = imdbCache.get(tmdbId);
+  if (mem) return mem;
 
-  // 2. Persistent DB cache — survives server restarts and OMDb rate-limit windows
+  // 2. Persistent DB cache
   try {
     const rows = await db.select().from(imdbCacheTable).where(eq(imdbCacheTable.tmdbId, tmdbId)).limit(1);
     if (rows.length > 0) {
       const row = rows[0];
+      // Has imdbId but no rating yet — try OMDb now if circuit is closed
+      if (row.imdbId && !row.imdbRating && Date.now() >= omdbRateLimitUntil) {
+        const freshRating = await fetchImdbRating(row.imdbId);
+        if (freshRating !== null) {
+          db.update(imdbCacheTable)
+            .set({ imdbRating: freshRating.toString(), fetchedAt: new Date() })
+            .where(eq(imdbCacheTable.tmdbId, tmdbId))
+            .catch(() => {});
+          const result = { imdbId: row.imdbId, imdbRating: freshRating };
+          imdbCache.set(tmdbId, result);
+          return result;
+        }
+      }
       const result = { imdbId: row.imdbId ?? null, imdbRating: row.imdbRating ? parseFloat(row.imdbRating) : null };
-      imdbCache.set(tmdbId, result);
+      if (result.imdbRating !== null) imdbCache.set(tmdbId, result);
       return result;
     }
-  } catch { /* DB unavailable — fall through to live fetch */ }
+  } catch { /* DB unavailable — fall through */ }
 
-  // 3. Live fetch: TMDB external_ids → OMDb
+  // 3. Live fetch: TMDB external_ids (FREE — no OMDb budget) → OMDb
   try {
     const apiKey = process.env.TMDB_API_KEY;
     if (!apiKey) return { imdbId: null, imdbRating: null };
@@ -313,28 +329,68 @@ async function fetchImdbForMovie(tmdbId: number): Promise<{ imdbId: string | nul
     if (!res.ok) throw new Error(`TMDB external_ids ${res.status}`);
     const extIds = await res.json() as Record<string, unknown>;
     const imdbId: string | null = (extIds.imdb_id as string) ?? null;
+
+    // Attempt OMDb rating (may be null if rate-limited)
     const imdbRating = await fetchImdbRating(imdbId);
     const result = { imdbId, imdbRating };
-    imdbCache.set(tmdbId, result);
 
-    // 4. Persist to DB — only when we have a real IMDb rating (not null due to rate-limit)
-    if (imdbRating !== null) {
-      db.insert(imdbCacheTable).values({
-        tmdbId,
-        imdbId,
-        imdbRating: imdbRating.toString(),
-      }).onConflictDoUpdate({
-        target: imdbCacheTable.tmdbId,
-        set: { imdbId, imdbRating: imdbRating.toString(), fetchedAt: new Date() },
-      }).catch(() => { /* ignore write failures */ });
+    // Always save imdbId to DB — even when OMDb is rate-limited.
+    // TMDB external_ids is free and this link never expires.
+    if (imdbId) {
+      if (imdbRating !== null) {
+        // Full entry: both imdbId and rating
+        db.insert(imdbCacheTable).values({ tmdbId, imdbId, imdbRating: imdbRating.toString() })
+          .onConflictDoUpdate({ target: imdbCacheTable.tmdbId, set: { imdbId, imdbRating: imdbRating.toString(), fetchedAt: new Date() } })
+          .catch(() => {});
+      } else {
+        // Partial entry: save imdbId now, rating will be filled by hourly catchup
+        db.insert(imdbCacheTable).values({ tmdbId, imdbId, imdbRating: null })
+          .onConflictDoUpdate({ target: imdbCacheTable.tmdbId, set: { imdbId } }) // preserve existing rating
+          .catch(() => {});
+      }
     }
 
+    // Only cache in memory when we have a real rating
+    if (imdbRating !== null) imdbCache.set(tmdbId, result);
     return result;
   } catch {
-    const result = { imdbId: null, imdbRating: null };
-    imdbCache.set(tmdbId, result);
-    return result;
+    return { imdbId: null, imdbRating: null };
   }
+}
+
+/**
+ * Hourly catchup: find all DB entries that have an imdbId but no rating yet,
+ * and fill them in from OMDb. Runs automatically once per hour after startup.
+ * Returns the number of ratings that were successfully filled.
+ */
+export async function catchupImdbRatings(): Promise<number> {
+  if (Date.now() < omdbRateLimitUntil) return 0; // Circuit still open — skip
+
+  let filled = 0;
+  try {
+    // Fetch up to 80 pending entries (conservative to stay within daily budget)
+    const pending = await db
+      .select()
+      .from(imdbCacheTable)
+      .where(and(isNotNull(imdbCacheTable.imdbId), isNull(imdbCacheTable.imdbRating)))
+      .limit(80);
+
+    for (const entry of pending) {
+      if (Date.now() < omdbRateLimitUntil) break; // Circuit opened mid-loop
+      if (!entry.imdbId) continue;
+      const rating = await fetchImdbRating(entry.imdbId);
+      if (rating !== null) {
+        await db.update(imdbCacheTable)
+          .set({ imdbRating: rating.toString(), fetchedAt: new Date() })
+          .where(eq(imdbCacheTable.tmdbId, entry.tmdbId))
+          .catch(() => {});
+        imdbCache.delete(entry.tmdbId); // Invalidate stale in-memory entry
+        filled++;
+      }
+    }
+  } catch { /* non-fatal */ }
+
+  return filled;
 }
 
 export async function enrichMoviesWithImdb<T extends { tmdbId: number }>(
