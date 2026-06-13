@@ -7,10 +7,11 @@ import {
   useGetWatchlists,
   useAddMovieToWatchlist,
   useRemoveMovieFromWatchlist,
-  useUpsertReview
+  useUpsertReview,
+  useGetFriends
 } from "@workspace/api-client-react";
 import { getBackdropUrl, getPosterUrl, getProfileUrl } from "@/lib/tmdb";
-import { Star, Clock, Calendar, Plus, Check, EyeOff, MessageSquare } from "lucide-react";
+import { Star, Clock, Calendar, Plus, Check, EyeOff, MessageSquare, Send, User } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,42 @@ function StarRating({ rating, setRating, readOnly = false }: { rating: number; s
             className={star <= rating ? "text-amber-500 fill-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" : "text-gray-700"} />
         </button>
       ))}
+    </div>
+  );
+}
+
+function HalfStarRating({ rating, setRating }: { rating: number; setRating: (r: number) => void }) {
+  const [hovered, setHovered] = useState(0);
+  const display = hovered || rating;
+  return (
+    <div className="flex gap-0.5">
+      {[1,2,3,4,5,6,7,8,9,10].map(star => {
+        const full = star <= Math.floor(display) && !(display === star - 0.5);
+        const half = display === star - 0.5;
+        return (
+          <div key={star} className="relative w-7 h-7">
+            <Star size={28} className={full ? "text-amber-500 fill-amber-500" : "text-gray-700"} />
+            {half && (
+              <div className="absolute inset-0 overflow-hidden" style={{ width: "50%" }}>
+                <Star size={28} className="text-amber-500 fill-amber-500" />
+              </div>
+            )}
+            <div className="absolute inset-0 flex">
+              <div className="w-1/2 h-full cursor-pointer"
+                onMouseEnter={() => setHovered(star - 0.5)}
+                onMouseLeave={() => setHovered(0)}
+                onClick={() => setRating(star - 0.5)} />
+              <div className="w-1/2 h-full cursor-pointer"
+                onMouseEnter={() => setHovered(star)}
+                onMouseLeave={() => setHovered(0)}
+                onClick={() => setRating(star)} />
+            </div>
+          </div>
+        );
+      })}
+      <span className="ml-2 text-amber-500 font-bold text-lg self-center min-w-[2.5rem]">
+        {display > 0 ? display : "—"}
+      </span>
     </div>
   );
 }
@@ -118,11 +155,18 @@ export default function MovieDetail() {
   const removeFromList = useRemoveMovieFromWatchlist();
   const upsertReview = useUpsertReview();
 
+  const { data: friends } = useGetFriends();
+
   const [, setLocation] = useLocation();
   const [reviewText, setReviewText] = useState("");
   const [rating, setRating] = useState(0);
   const [isSpoiler, setIsSpoiler] = useState(false);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [isRecommendOpen, setIsRecommendOpen] = useState(false);
+  const [recFriendId, setRecFriendId] = useState("");
+  const [recRating, setRecRating] = useState(0);
+  const [recNote, setRecNote] = useState("");
+  const [recSending, setRecSending] = useState(false);
 
   const handleToggleWatchlist = (watchlistId: number, isInList: boolean) => {
     if (!movie) return;
@@ -143,6 +187,36 @@ export default function MovieDetail() {
           toast.success(t("addedToWatchlist"));
         }
       });
+    }
+  };
+
+  const submitRecommend = async () => {
+    if (!recFriendId) { toast.error(t("selectFriend")); return; }
+    if (!movie) return;
+    setRecSending(true);
+    try {
+      const res = await fetch("/api/recommendations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          toUserId: recFriendId,
+          tmdbId: movie.tmdbId,
+          movieTitle: movie.title,
+          moviePosterPath: movie.posterPath,
+          rating: recRating > 0 ? recRating : null,
+          message: recNote.trim() || null,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(t("recommendSent"));
+      setIsRecommendOpen(false);
+      setRecFriendId("");
+      setRecRating(0);
+      setRecNote("");
+    } catch {
+      toast.error("Hata oluştu, tekrar dene.");
+    } finally {
+      setRecSending(false);
     }
   };
 
@@ -298,6 +372,79 @@ export default function MovieDetail() {
                   <Button onClick={submitReview}
                     className="w-full bg-gradient-to-r from-amber-500 to-red-500 text-black font-bold hover:from-amber-400 hover:to-red-400 py-6 text-lg rounded-xl">
                     {t("postReview")}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Filmi Öner */}
+            <Dialog open={isRecommendOpen} onOpenChange={setIsRecommendOpen}>
+              <DialogTrigger asChild>
+                <button className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-6 py-3 rounded-xl transition-colors shadow-[0_0_16px_rgba(16,185,129,0.25)] hover:shadow-[0_0_24px_rgba(16,185,129,0.4)]">
+                  <Send size={18} />
+                  <span>{t("recommendMovie")}</span>
+                </button>
+              </DialogTrigger>
+              <DialogContent className="bg-[#111] border-gray-800 text-white sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-bold">{t("recommendMovie")} — {movie.title}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-5 pt-4">
+                  {/* Friend select */}
+                  <div className="space-y-2">
+                    <Label className="text-gray-400 text-sm">{t("recommendTo")}</Label>
+                    <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
+                      {friends && friends.length > 0 ? friends.map((f: any) => (
+                        <div key={f.clerkId}
+                          onClick={() => setRecFriendId(f.clerkId)}
+                          className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors border ${recFriendId === f.clerkId ? "bg-emerald-600/20 border-emerald-500/50" : "border-transparent hover:bg-white/5"}`}>
+                          <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-800 shrink-0">
+                            {f.avatarUrl ? (
+                              <img src={f.avatarUrl} alt={f.displayName} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <User size={14} className="text-gray-500" />
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm text-white">{f.displayName || f.username}</div>
+                            <div className="text-xs text-gray-500">@{f.username}</div>
+                          </div>
+                          {recFriendId === f.clerkId && (
+                            <Check size={16} className="text-emerald-400 ml-auto" />
+                          )}
+                        </div>
+                      )) : (
+                        <p className="text-gray-500 text-sm py-2">{t("noFriends")}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Half-star rating */}
+                  <div className="space-y-2">
+                    <Label className="text-gray-400 text-sm">{t("recommendRating")}</Label>
+                    <HalfStarRating rating={recRating} setRating={setRecRating} />
+                  </div>
+
+                  {/* Note */}
+                  <div className="space-y-2">
+                    <Label className="text-gray-400 text-sm">{t("recommendNote")}</Label>
+                    <Textarea
+                      value={recNote}
+                      onChange={e => setRecNote(e.target.value)}
+                      placeholder={t("message")}
+                      className="min-h-[80px] bg-black border-gray-800 resize-none focus-visible:ring-emerald-500 text-sm"
+                    />
+                  </div>
+
+                  <Button
+                    onClick={submitRecommend}
+                    disabled={recSending || !recFriendId}
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-5 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send size={18} className="mr-2" />
+                    {recSending ? "Gönderiliyor..." : t("send")}
                   </Button>
                 </div>
               </DialogContent>

@@ -101,7 +101,15 @@ function HomeRedirect() {
 function SignInPage() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
-      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+      <div className="flex flex-col items-center gap-3 w-full">
+        <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+        <div className="flex items-center gap-2 text-sm text-gray-500 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 w-[440px] max-w-full">
+          <div className="w-4 h-4 rounded border-2 border-amber-500 bg-amber-500 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 10 8" className="w-2.5 h-2.5 text-black fill-current"><path d="M1 4l3 3 5-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+          </div>
+          <span className="text-gray-400">Beni hatırla — <span className="text-gray-500">oturumunuz otomatik olarak hatırlanır</span></span>
+        </div>
+      </div>
     </div>
   );
 }

@@ -83,6 +83,7 @@ export const recommendationsTable = pgTable("recommendations", {
   movieTitle: text("movie_title"),
   moviePosterPath: text("movie_poster_path"),
   message: text("message"),
+  rating: text("rating"),
   seen: integer("seen").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

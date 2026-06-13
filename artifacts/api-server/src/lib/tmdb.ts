@@ -208,14 +208,37 @@ export async function getMovieDetail(tmdbId: number) {
     profilePath: c.profile_path || null,
   }));
 
-  const trailer = (videos.results ?? []).find(
+  // Trailer: prefer TR, fall back to any YouTube trailer
+  let trailer = (videos.results ?? []).find(
     (v: any) => v.type === "Trailer" && v.site === "YouTube",
   );
+  if (!trailer) {
+    // Retry without language restriction for English trailer
+    try {
+      const enVideos = await fetch(
+        `https://api.themoviedb.org/3/movie/${tmdbId}/videos?api_key=${process.env.TMDB_API_KEY}&language=en-US`
+      ).then(r => r.json());
+      trailer = (enVideos.results ?? []).find(
+        (v: any) => v.type === "Trailer" && v.site === "YouTube",
+      );
+    } catch {}
+  }
+
+  // Overview: fall back to English if TR is empty
+  let overview = detail.overview ?? "";
+  if (!overview.trim()) {
+    try {
+      const enDetail = await fetch(
+        `https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${process.env.TMDB_API_KEY}&language=en-US`
+      ).then(r => r.json());
+      overview = enDetail.overview ?? "";
+    } catch {}
+  }
 
   return {
     tmdbId: detail.id,
     title: detail.title,
-    overview: detail.overview ?? "",
+    overview,
     posterPath: detail.poster_path || null,
     backdropPath: detail.backdrop_path || null,
     releaseYear: isNaN(releaseYear as number) ? null : releaseYear,

@@ -192,6 +192,7 @@ export default function Home() {
     queryKey: ["movies", "recent-popular"],
     queryFn: () => fetchMovies("/api/movies/recent-popular"),
     staleTime: 10 * 60 * 1000,
+    refetchInterval: 15 * 60 * 1000,
   });
 
   const { data: trending, isLoading: loadingTrending } = useGetTrendingMovies();

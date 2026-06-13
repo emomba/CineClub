@@ -1,6 +1,6 @@
 import { PageTransition } from "@/components/PageTransition";
 import { useGetRecommendationInbox, useMarkRecommendationRead, getGetRecommendationInboxQueryKey } from "@workspace/api-client-react";
-import { MessageSquare, Check, User } from "lucide-react";
+import { MessageSquare, Check, User, Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
@@ -68,6 +68,17 @@ export default function Recommendations() {
                 <Link href={`/movie/${rec.tmdbId}`}>
                   <h3 className="font-bold text-2xl mb-2 hover:text-amber-500 transition-colors cursor-pointer">{rec.movie.title}</h3>
                 </Link>
+
+                {(rec as any).rating && (
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <div className="flex items-center gap-1 bg-black/50 px-2.5 py-1 rounded-lg border border-amber-500/20">
+                      <Star size={13} className="text-amber-500 fill-amber-500" />
+                      <span className="font-bold text-amber-400 text-sm">{(rec as any).rating}</span>
+                      <span className="text-gray-600 text-xs">/10</span>
+                    </div>
+                    <span className="text-xs text-gray-600">puan verdi</span>
+                  </div>
+                )}
 
                 {rec.message && (
                   <div className="bg-black/50 p-4 rounded-xl border border-gray-800/50 mt-2 flex-1">

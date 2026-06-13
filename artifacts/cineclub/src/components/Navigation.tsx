@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, Search, ListVideo, Users, User, Bell, MessageSquare, Dices, LogOut, Globe } from "lucide-react";
-import { useClerk } from "@clerk/react";
+import { Home, Search, ListVideo, Users, Bell, MessageSquare, Dices, LogOut, Globe, ChevronDown } from "lucide-react";
+import { useClerk, useUser } from "@clerk/react";
 import { useGetNotifications, useGetRecommendationInbox } from "@workspace/api-client-react";
 import { useLang, LANGS } from "@/lib/i18n";
 
 export function Sidebar() {
   const [location] = useLocation();
   const { signOut } = useClerk();
+  const { user } = useUser();
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
   const { t, lang, setLang } = useLang();
   const [langOpen, setLangOpen] = useState(false);
@@ -39,22 +40,26 @@ export function Sidebar() {
       icon: MessageSquare,
       label: t("recommendations"),
       href: "/recommendations",
-      badge: unreadRecs > 0 ? unreadRecs : 0
+      badge: unreadRecs > 0 ? unreadRecs : 0,
     },
     {
       icon: Bell,
       label: t("notifications"),
       href: "/notifications",
-      badge: unreadNotifs > 0 ? unreadNotifs : 0
+      badge: unreadNotifs > 0 ? unreadNotifs : 0,
     },
-    { icon: User, label: t("profile"), href: "/profile" },
   ];
 
-  const currentFlag = LANGS.find(l => l.code === lang)?.flag ?? "🇹🇷";
+  const currentLang = LANGS.find(l => l.code === lang) ?? LANGS[0];
+
+  const avatarUrl = user?.imageUrl ?? null;
+  const displayName = user?.fullName || user?.username || "Kullanıcı";
+  const username = user?.username ?? "";
 
   return (
     <div className="w-64 bg-[#050505] border-r border-[#1a1a1a] h-[100dvh] sticky top-0 flex flex-col hidden md:flex">
-      <div className="p-6 flex items-center justify-between">
+      {/* Logo + lang */}
+      <div className="p-5 flex items-center justify-between border-b border-[#1a1a1a]">
         <div className="flex items-center gap-3">
           <img src={`${basePath}/logo.svg`} alt="CineClub" className="w-8 h-8" />
           <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-amber-500 to-red-500 bg-clip-text text-transparent">CineClub</span>
@@ -64,11 +69,12 @@ export function Sidebar() {
         <div className="relative" ref={langRef}>
           <button
             onClick={() => setLangOpen(v => !v)}
-            className="flex items-center gap-1 text-gray-400 hover:text-white transition-colors text-sm px-2 py-1 rounded-lg hover:bg-white/5"
+            className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors text-xs px-2 py-1.5 rounded-lg hover:bg-white/5 border border-transparent hover:border-gray-800"
             title={t("language")}
           >
-            <span className="text-base leading-none">{currentFlag}</span>
-            <Globe size={13} className="opacity-60" />
+            <span className="text-base leading-none">{currentLang.flag}</span>
+            <span className="font-medium">{currentLang.short}</span>
+            <ChevronDown size={11} className="opacity-50" />
           </button>
           {langOpen && (
             <div className="absolute right-0 top-full mt-1 w-36 bg-[#111] border border-gray-800 rounded-xl shadow-2xl overflow-hidden z-50">
@@ -76,10 +82,11 @@ export function Sidebar() {
                 <button
                   key={l.code}
                   onClick={() => { setLang(l.code); setLangOpen(false); }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${lang === l.code ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors ${lang === l.code ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}
                 >
-                  <span>{l.flag}</span>
-                  <span>{l.label}</span>
+                  <span className="text-base">{l.flag}</span>
+                  <span>{l.short}</span>
+                  <span className="text-gray-600 text-xs ml-auto">{l.label}</span>
                 </button>
               ))}
             </div>
@@ -87,7 +94,28 @@ export function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 px-4 py-4 space-y-2">
+      {/* User profile card */}
+      <Link href="/profile">
+        <div className="mx-3 mt-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-amber-500/30 hover:bg-white/8 transition-all cursor-pointer group">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-800 border border-gray-700 shrink-0">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-sm">
+                  {displayName.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-sm text-white group-hover:text-amber-400 transition-colors truncate">{displayName}</div>
+              {username && <div className="text-xs text-gray-500 truncate">@{username}</div>}
+            </div>
+          </div>
+        </div>
+      </Link>
+
+      <nav className="flex-1 px-3 py-3 space-y-1">
         {navItems.map((item) => {
           const isActive = location === item.href || location.startsWith(`${item.href}/`);
           return (
@@ -112,10 +140,10 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-[#1a1a1a]">
+      <div className="p-3 border-t border-[#1a1a1a]">
         <button
           onClick={() => signOut({ redirectUrl: basePath || "/" })}
-          className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+          className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-gray-400 hover:bg-white/5 hover:text-red-400 transition-all"
         >
           <LogOut size={20} />
           <span className="font-medium">{t("logout")}</span>
@@ -132,7 +160,8 @@ export function MobileNav() {
     { icon: Home, href: "/home" },
     { icon: Search, href: "/search" },
     { icon: Dices, href: "/random-pick" },
-    { icon: User, href: "/profile" },
+    { icon: MessageSquare, href: "/recommendations" },
+    { icon: Bell, href: "/notifications" },
   ];
 
   return (

@@ -76,6 +76,8 @@ const translations = {
     blurReview: "Başkaları için bulanık yap", postReview: "İncelemeyi Paylaş",
     containsSpoilers: "Spoiler İçeriyor",
     actorFilmography: "Filmografisi", close: "Kapat",
+    recommendMovie: "Filmi Öner", recommendRating: "Puanın (0.5–10)", recommendNote: "Not (isteğe bağlı)", recommendSent: "Öneri gönderildi!",
+    rememberMe: "Beni hatırla", sessionPersists: "Oturumunuz otomatik olarak hatırlanır",
     recentReviews: "Son İncelemeler", noReviewsYet: "Henüz inceleme yok",
     noReviewsDesc: "Henüz inceleme yazılmamış.",
     findNextFavorite: "Bir sonraki favori filmini bul",
@@ -164,6 +166,8 @@ const translations = {
     tryAdjusting: "Try adjusting your search or category filter",
     userNotFound: "User not found",
     watched: "Watched",
+    recommendMovie: "Recommend Film", recommendRating: "Your Rating (0.5–10)", recommendNote: "Note (optional)", recommendSent: "Recommendation sent!",
+    rememberMe: "Remember me", sessionPersists: "Your session is saved automatically",
   },
   de: {
     home: "Startseite", search: "Suche", watchlists: "Merklisten",
@@ -244,6 +248,8 @@ const translations = {
     tryAdjusting: "Passe deine Suche oder den Kategorie-Filter an",
     userNotFound: "Benutzer nicht gefunden",
     watched: "Gesehen",
+    recommendMovie: "Film empfehlen", recommendRating: "Bewertung (0.5–10)", recommendNote: "Notiz (optional)", recommendSent: "Empfehlung gesendet!",
+    rememberMe: "Angemeldet bleiben", sessionPersists: "Deine Sitzung wird automatisch gespeichert",
   },
   es: {
     home: "Inicio", search: "Buscar", watchlists: "Listas",
@@ -324,6 +330,8 @@ const translations = {
     tryAdjusting: "Intenta ajustar tu búsqueda o filtro",
     userNotFound: "Usuario no encontrado",
     watched: "Visto",
+    recommendMovie: "Recomendar Película", recommendRating: "Tu Nota (0.5–10)", recommendNote: "Nota (opcional)", recommendSent: "¡Recomendación enviada!",
+    rememberMe: "Recuérdame", sessionPersists: "Tu sesión se guarda automáticamente",
   },
   fr: {
     home: "Accueil", search: "Recherche", watchlists: "Listes",
@@ -404,6 +412,8 @@ const translations = {
     tryAdjusting: "Essayez d'ajuster votre recherche ou filtre",
     userNotFound: "Utilisateur non trouvé",
     watched: "Vu",
+    recommendMovie: "Recommander", recommendRating: "Votre note (0.5–10)", recommendNote: "Note (optionnelle)", recommendSent: "Recommandation envoyée!",
+    rememberMe: "Se souvenir de moi", sessionPersists: "Votre session est sauvegardée automatiquement",
   },
 };
 

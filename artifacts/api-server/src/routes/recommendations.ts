@@ -8,7 +8,7 @@ const router: IRouter = Router();
 
 router.post("/recommendations", requireAuth, async (req, res): Promise<void> => {
   const clerkId = getClerkUserId(req);
-  const { toUserId, tmdbId, movieTitle, moviePosterPath, message } = req.body;
+  const { toUserId, tmdbId, movieTitle, moviePosterPath, message, rating } = req.body;
 
   if (!toUserId || !tmdbId) {
     res.status(400).json({ error: "toUserId and tmdbId are required" });
@@ -24,6 +24,7 @@ router.post("/recommendations", requireAuth, async (req, res): Promise<void> => 
       movieTitle: movieTitle ?? null,
       moviePosterPath: moviePosterPath ?? null,
       message: message ?? null,
+      rating: rating ? String(rating) : null,
       seen: 0,
     })
     .returning();
@@ -38,6 +39,7 @@ router.post("/recommendations", requireAuth, async (req, res): Promise<void> => 
       fromUsername: sender.username,
       movieTitle: movieTitle,
       tmdbId,
+      rating: rating ?? null,
     }),
   });
 
@@ -47,6 +49,7 @@ router.post("/recommendations", requireAuth, async (req, res): Promise<void> => 
     toUserId: created.toUserId,
     tmdbId: created.tmdbId,
     message: created.message ?? null,
+    rating: created.rating ?? null,
     seen: created.seen === 1,
     createdAt: created.createdAt.toISOString(),
   });
@@ -68,6 +71,7 @@ router.get("/recommendations/inbox", requireAuth, async (req, res): Promise<void
         toUserId: r.toUserId,
         tmdbId: r.tmdbId,
         message: r.message ?? null,
+        rating: r.rating ?? null,
         seen: r.seen === 1,
         createdAt: r.createdAt.toISOString(),
         movie: {
