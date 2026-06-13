@@ -1,10 +1,11 @@
 import { PageTransition } from "@/components/PageTransition";
 import {
   useGetMe, useUpdateMe, useGetUserReviews, getGetUserReviewsQueryKey, getGetMeQueryKey,
-  useGetWatchlists, useUpdateWatchlist, useDeleteWatchlist, getGetWatchlistsQueryKey
+  useGetWatchlists, useUpdateWatchlist, useDeleteWatchlist, getGetWatchlistsQueryKey,
+  useGetWatchlistMovies, useRemoveMovieFromWatchlist, useCreateWatchlist, getGetWatchlistMoviesQueryKey,
 } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Settings, Save, Film, ListVideo, Pencil, Trash2, Check, X as XIcon } from "lucide-react";
+import { User, Settings, Save, Film, ListVideo, Pencil, Trash2, Check, X as XIcon, Heart, Plus, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
@@ -129,6 +130,110 @@ function WatchlistItem({ list }: { list: { id: number; name: string; isDefault: 
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function FavoritesSection({ watchlists }: { watchlists: { id: number; name: string; isDefault: boolean; movieCount: number }[] }) {
+  const queryClient = useQueryClient();
+  const createWatchlist = useCreateWatchlist();
+  const removeMovie = useRemoveMovieFromWatchlist();
+
+  const favList = watchlists.find(l => l.name === "Favoriler");
+  const { data: favMovies, isLoading } = useGetWatchlistMovies(favList?.id ?? 0, {
+    query: { enabled: !!favList },
+  });
+
+  const handleCreate = () => {
+    createWatchlist.mutate({ data: { name: "Favoriler" } }, {
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetWatchlistsQueryKey() }),
+    });
+  };
+
+  const handleRemove = (tmdbId: number) => {
+    if (!favList) return;
+    removeMovie.mutate({ id: favList.id, tmdbId }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetWatchlistMoviesQueryKey(favList.id) });
+        queryClient.invalidateQueries({ queryKey: getGetWatchlistsQueryKey() });
+      },
+    });
+  };
+
+  if (!favList) {
+    return (
+      <div>
+        <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+          <Heart size={22} className="text-amber-500" />
+          Favorilerim
+        </h3>
+        <div className="bg-[#111] border border-gray-800 border-dashed rounded-2xl p-8 text-center">
+          <Heart size={32} className="text-gray-700 mx-auto mb-3" />
+          <p className="text-gray-500 mb-4 text-sm">Favori filmlerini kaydetmek için bir liste oluştur</p>
+          <Button onClick={handleCreate} disabled={createWatchlist.isPending}
+            className="bg-amber-500 hover:bg-amber-600 text-black font-semibold px-5">
+            <Plus size={16} className="mr-2" />
+            Favoriler Listesi Oluştur
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-2xl font-bold flex items-center gap-2">
+          <Heart size={22} className="text-amber-500 fill-amber-500" />
+          Favorilerim
+          {favMovies && <span className="text-gray-600 font-normal text-lg">({favMovies.length})</span>}
+        </h3>
+        <Link href="/search">
+          <button className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-amber-500 transition-colors border border-gray-800 hover:border-amber-500/50 rounded-lg px-3 py-1.5">
+            <Plus size={14} />
+            Film Ekle
+          </button>
+        </Link>
+      </div>
+
+      {isLoading && (
+        <div className="flex gap-3">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="w-28 aspect-[2/3] rounded-xl bg-[#111] shrink-0" />)}
+        </div>
+      )}
+
+      {favMovies && favMovies.length === 0 && (
+        <div className="bg-[#111] border border-gray-800 border-dashed rounded-2xl p-8 text-center">
+          <p className="text-gray-500 text-sm">Henüz favori film eklenmemiş.</p>
+          <p className="text-gray-600 text-xs mt-1">Film sayfasında "Favoriler" listesine ekleyebilirsin.</p>
+        </div>
+      )}
+
+      {favMovies && favMovies.length > 0 && (
+        <div className="flex gap-3 overflow-x-auto pb-3 snap-x scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent">
+          {favMovies.map(movie => (
+            <div key={movie.tmdbId} className="w-28 shrink-0 snap-start group relative">
+              <Link href={`/movie/${movie.tmdbId}`}>
+                <div className="aspect-[2/3] rounded-xl overflow-hidden bg-gray-900 border border-amber-500/30 group-hover:border-amber-500 group-hover:shadow-[0_4px_16px_rgba(245,158,11,0.25)] transition-all duration-300">
+                  {movie.posterPath ? (
+                    <img src={`https://image.tmdb.org/t/p/w200${movie.posterPath}`} alt={movie.title || ""} className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center"><Film size={24} className="text-gray-700" /></div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1.5 line-clamp-1 group-hover:text-gray-300 transition-colors px-0.5">{movie.title}</p>
+              </Link>
+              <button
+                onClick={() => handleRemove(movie.tmdbId)}
+                className="absolute top-1 right-1 bg-black/80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600/80 z-10"
+                title="Favorilerden çıkar"
+              >
+                <XIcon size={11} className="text-white" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -296,32 +401,8 @@ export default function Profile() {
         </div>
       )}
 
-      {!isEditing && favoriteMovies.length > 0 && (
-        <div>
-          <h3 className="text-2xl font-bold mb-5 flex items-center gap-2">
-            <span className="text-amber-500">★</span>
-            {t("favoriteMovies")}
-          </h3>
-          <div className="flex gap-3 overflow-x-auto pb-3 snap-x">
-            {favoriteMovies.map(review => (
-              <Link key={review.id} href={`/movie/${review.tmdbId}`}>
-                <div className="w-28 shrink-0 snap-start group cursor-pointer">
-                  <div className="aspect-[2/3] rounded-xl overflow-hidden bg-gray-900 border border-amber-500/30 group-hover:border-amber-500 group-hover:shadow-[0_4px_16px_rgba(245,158,11,0.25)] transition-all duration-300 relative">
-                    {review.moviePosterPath ? (
-                      <img src={`https://image.tmdb.org/t/p/w200${review.moviePosterPath}`} alt={review.movieTitle || ""} className="w-full h-full object-cover" loading="lazy" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-900"><Film size={24} className="text-gray-700" /></div>
-                    )}
-                    <div className="absolute bottom-1 right-1 bg-black/80 rounded-md px-1.5 py-0.5 text-xs font-bold text-amber-400">
-                      ★{review.rating}
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1.5 line-clamp-1 group-hover:text-gray-300 transition-colors px-0.5">{review.movieTitle}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
+      {!isEditing && watchlists && (
+        <FavoritesSection watchlists={watchlists} />
       )}
 
       {!isEditing && reviews && reviews.length > 0 && (

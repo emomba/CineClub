@@ -90,7 +90,7 @@ const translations = {
     receivedRecommendations: "Gelen Öneriler",
     watchedMoviesSection: "İzlediğim Filmler",
     theirWatchedMovies: "İzlediği Filmler",
-    favoriteMovies: "En Sevdiklerim",
+    favoriteMovies: "Favorilerim",
     commonMovies: "Birlikte İzlediklerimiz",
     noWatchedMovies: "Henüz izlenmiş film yok",
     noCommonMovies: "Henüz ortak film yok",
