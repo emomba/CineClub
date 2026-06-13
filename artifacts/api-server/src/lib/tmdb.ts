@@ -203,6 +203,7 @@ export async function getMoviesByGenre(
   page = 1,
   sortBy = "popularity.desc",
   runtimeFilter: "all" | "movie" | "short" = "all",
+  voteCountGte?: number,
 ) {
   const params: Record<string, string | number> = {
     with_genres: genreId,
@@ -211,6 +212,7 @@ export async function getMoviesByGenre(
   };
   if (runtimeFilter === "movie") params["with_runtime.gte"] = 60;
   if (runtimeFilter === "short") params["with_runtime.lte"] = 59;
+  if (voteCountGte != null) params["vote_count.gte"] = voteCountGte;
 
   const data = await tmdbFetch("/discover/movie", params);
   return {

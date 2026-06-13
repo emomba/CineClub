@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { PageTransition } from "@/components/PageTransition";
 import { MovieCard } from "@/components/MovieCard";
 import { useSearchMovies, useGetGenreList } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { Search as SearchIcon, X, ArrowUpDown, Filter } from "lucide-react";
+import { Search as SearchIcon, X, ArrowUpDown, Filter, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLang } from "@/lib/i18n";
@@ -38,6 +38,11 @@ export default function Search() {
   const [sortOpen, setSortOpen] = useState(false);
   const [runtimeFilter, setRuntimeFilter] = useState<"all" | "movie" | "short">("all");
 
+  // Pagination state for genre browsing
+  const [genrePage, setGenrePage] = useState(1);
+  const [accumulatedMovies, setAccumulatedMovies] = useState<any[]>([]);
+  const prevKeyRef = useRef<string>("");
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const genre = params.get("genre");
@@ -49,6 +54,16 @@ export default function Search() {
     }
   }, [location]);
 
+  // Reset pagination when genre/sort/filter changes
+  const filterKey = `${selectedGenre}-${sortBy}-${runtimeFilter}`;
+  useEffect(() => {
+    if (prevKeyRef.current !== filterKey) {
+      prevKeyRef.current = filterKey;
+      setGenrePage(1);
+      setAccumulatedMovies([]);
+    }
+  }, [filterKey]);
+
   const { data: genresData } = useGetGenreList();
 
   const { data: searchResults, isLoading: searching } = useSearchMovies(
@@ -56,13 +71,32 @@ export default function Search() {
     { query: { enabled: !!debouncedQuery && !selectedGenre, queryKey: ["searchMovies", debouncedQuery] } }
   );
 
-  const { data: genreResults, isLoading: loadingGenre } = useQuery<{ results: any[] }>({
-    queryKey: ["moviesByGenre", selectedGenre, sortBy, runtimeFilter],
+  const { data: genreData, isLoading: loadingGenre, isFetching: fetchingGenre } = useQuery<{
+    results: any[];
+    totalPages: number;
+    page: number;
+  }>({
+    queryKey: ["moviesByGenre", selectedGenre, sortBy, runtimeFilter, genrePage],
     queryFn: () =>
-      fetch(`/api/movies/genre/${selectedGenre}?sortBy=${sortBy}&runtimeFilter=${runtimeFilter}`).then(r => r.json()),
+      fetch(`/api/movies/genre/${selectedGenre}?sortBy=${sortBy}&runtimeFilter=${runtimeFilter}&page=${genrePage}`)
+        .then(r => r.json()),
     enabled: !!selectedGenre,
     staleTime: 5 * 60 * 1000,
   });
+
+  // Accumulate movies across pages
+  useEffect(() => {
+    if (!genreData?.results) return;
+    if (genrePage === 1) {
+      setAccumulatedMovies(genreData.results);
+    } else {
+      setAccumulatedMovies(prev => {
+        const existingIds = new Set(prev.map((m: any) => m.tmdbId));
+        const newOnes = genreData.results.filter((m: any) => !existingIds.has(m.tmdbId));
+        return [...prev, ...newOnes];
+      });
+    }
+  }, [genreData, genrePage]);
 
   const handleGenreClick = (genreId: number, genreName: string) => {
     if (selectedGenre === genreId) {
@@ -75,8 +109,14 @@ export default function Search() {
     }
   };
 
-  const results = selectedGenre ? genreResults?.results : (debouncedQuery ? searchResults?.results : []);
-  const isLoading = selectedGenre ? loadingGenre : (debouncedQuery ? searching : false);
+  const genreResults = selectedGenre ? accumulatedMovies : undefined;
+  const isLoading = selectedGenre ? (loadingGenre && genrePage === 1) : (debouncedQuery ? searching : false);
+  const results = selectedGenre ? genreResults : (debouncedQuery ? searchResults?.results : []);
+
+  const hasMorePages = selectedGenre && genreData && sortBy !== "imdb.desc"
+    ? genreData.totalPages > genrePage
+    : false;
+  const isLoadingMore = fetchingGenre && genrePage > 1;
 
   const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.labelKey ?? "sortPopularity";
 
@@ -123,6 +163,9 @@ export default function Search() {
             {selectedGenre
               ? (selectedGenreName || t("browseByGenre"))
               : `"${debouncedQuery}" sonuçları`}
+            {selectedGenre && accumulatedMovies.length > 0 && (
+              <span className="ml-2 text-sm font-normal text-gray-500">{accumulatedMovies.length} film</span>
+            )}
           </h2>
           <div className="flex items-center gap-2">
             {/* Runtime filter */}
@@ -182,11 +225,37 @@ export default function Search() {
             {[...Array(12)].map((_, i) => <Skeleton key={i} className="w-full aspect-[2/3] rounded-xl bg-[#111]" />)}
           </div>
         ) : results && results.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {results.map((movie) => (
-              <div key={movie.tmdbId} className="w-full"><MovieCard movie={movie} /></div>
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {results.map((movie) => (
+                <div key={movie.tmdbId} className="w-full"><MovieCard movie={movie} /></div>
+              ))}
+            </div>
+
+            {/* Load More */}
+            {hasMorePages && (
+              <div className="flex justify-center mt-8">
+                <button
+                  onClick={() => setGenrePage(p => p + 1)}
+                  disabled={isLoadingMore}
+                  className="flex items-center gap-2 bg-[#111] border border-gray-800 hover:border-amber-500/50 text-gray-300 hover:text-white px-8 py-3 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
+                >
+                  {isLoadingMore ? (
+                    <><Loader2 size={16} className="animate-spin text-amber-500" /> Yükleniyor...</>
+                  ) : (
+                    "Daha Fazla Yükle"
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* Loading more skeleton */}
+            {isLoadingMore && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mt-4">
+                {[...Array(6)].map((_, i) => <Skeleton key={i} className="w-full aspect-[2/3] rounded-xl bg-[#111]" />)}
+              </div>
+            )}
+          </>
         ) : (debouncedQuery || selectedGenre) ? (
           <div className="text-center text-gray-500 py-20">
             <p className="text-xl">{t("noMoviesFound")}</p>

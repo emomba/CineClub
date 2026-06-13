@@ -90,14 +90,30 @@ router.get("/movies/genre/:genreId", async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.genreId) ? req.params.genreId[0] : req.params.genreId;
   const genreId = parseInt(raw, 10);
   const page = parseInt(String(req.query.page ?? "1"), 10);
-  // "imdb.desc" is a frontend-only sort — pass vote_average.desc to TMDB for best pool, then re-sort by IMDb
   const rawSort = String(req.query.sortBy ?? "imdb.desc");
-  const tmdbSort = rawSort === "imdb.desc" ? "vote_average.desc" : rawSort;
   const runtimeFilter = String(req.query.runtimeFilter ?? "all") as "all" | "movie" | "short";
-  const data = await getMoviesByGenre(genreId, page, tmdbSort, runtimeFilter);
-  const enriched = await enrichMoviesWithImdb(data.results);
-  const results = rawSort === "imdb.desc" ? sortByImdbRating(enriched) : enriched;
-  res.json({ ...data, results });
+
+  if (rawSort === "imdb.desc") {
+    // Fetch 3 pages of highly-voted movies for a quality pool, enrich all, sort by IMDb
+    // vote_count.gte=500 ensures OMDb has data for all results (avoids null imdbRating)
+    const pages = await Promise.all(
+      [1, 2, 3].map(p => getMoviesByGenre(genreId, p, "vote_average.desc", runtimeFilter, 500))
+    );
+    const seen = new Set<number>();
+    const merged = pages.flatMap(d => d.results).filter(m => {
+      if (seen.has(m.tmdbId)) return false;
+      seen.add(m.tmdbId);
+      return true;
+    });
+    const enriched = await enrichMoviesWithImdb(merged, 10);
+    const results = sortByImdbRating(enriched);
+    const realTotalPages = pages[0]?.totalPages ?? 1;
+    res.json({ results, totalPages: 1, page: 1, _poolTotalPages: realTotalPages });
+  } else {
+    const data = await getMoviesByGenre(genreId, page, rawSort, runtimeFilter);
+    const enriched = await enrichMoviesWithImdb(data.results);
+    res.json({ ...data, results: enriched });
+  }
 });
 
 router.get("/actors/:personId", async (req, res): Promise<void> => {
