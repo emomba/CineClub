@@ -113,6 +113,14 @@ router.patch("/friends/:id/accept", requireAuth, async (req, res): Promise<void>
     return;
   }
 
+  // Notify the original requester that their request was accepted
+  const accepter = await getOrCreateUser(clerkId);
+  await db.insert(notificationsTable).values({
+    userId: updated.requesterId,
+    type: "friend_accept",
+    data: JSON.stringify({ friendshipId: updated.id, fromUsername: accepter.username, fromDisplayName: accepter.displayName }),
+  });
+
   const result = await getFriendshipWithUser(updated, clerkId);
   res.json(result);
 });

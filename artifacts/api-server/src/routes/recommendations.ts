@@ -38,6 +38,7 @@ router.post("/recommendations", requireAuth, async (req, res): Promise<void> => 
       recommendationId: created.id,
       fromUsername: sender.username,
       movieTitle: movieTitle,
+      moviePosterPath: moviePosterPath ?? null,
       tmdbId,
       rating: rating ?? null,
     }),
