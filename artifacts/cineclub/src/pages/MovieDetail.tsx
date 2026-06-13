@@ -218,7 +218,7 @@ export default function MovieDetail() {
       setRecRating(0);
       setRecNote("");
     } catch {
-      toast.error("Hata oluştu, tekrar dene.");
+      toast.error(t("errorOccurred"));
     } finally {
       setRecSending(false);
     }

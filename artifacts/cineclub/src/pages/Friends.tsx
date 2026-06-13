@@ -37,7 +37,7 @@ export default function Friends() {
     if (!username.trim()) return;
     sendRequest.mutate({ data: { targetUsername: username.trim() } }, {
       onSuccess: () => { toast.success(t("friendRequestSent")); setUsername(""); },
-      onError: (err: any) => { toast.error(err.response?.data?.message || t("friendRequestSent")); }
+      onError: (err: any) => { toast.error(err.response?.data?.message || t("userNotFound")); }
     });
   };
 

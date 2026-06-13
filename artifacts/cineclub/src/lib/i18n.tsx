@@ -101,6 +101,7 @@ const translations = {
     sortTitle: "İsme Göre",
     sortYearDesc: "Yıla Göre (Yeni)",
     sortYearAsc: "Yıla Göre (Eski)",
+    errorOccurred: "Hata oluştu, tekrar dene.",
   },
   en: {
     home: "Home", search: "Search", watchlists: "Watchlists",
@@ -198,6 +199,7 @@ const translations = {
     sortTitle: "By Title",
     sortYearDesc: "By Year (Newest)",
     sortYearAsc: "By Year (Oldest)",
+    errorOccurred: "An error occurred, please try again.",
   },
   de: {
     home: "Startseite", search: "Suche", watchlists: "Merklisten",
@@ -295,6 +297,7 @@ const translations = {
     sortTitle: "Nach Titel",
     sortYearDesc: "Nach Jahr (Neueste)",
     sortYearAsc: "Nach Jahr (Älteste)",
+    errorOccurred: "Ein Fehler ist aufgetreten, bitte versuche es erneut.",
   },
   es: {
     home: "Inicio", search: "Buscar", watchlists: "Listas",
@@ -392,6 +395,7 @@ const translations = {
     sortTitle: "Por Título",
     sortYearDesc: "Por Año (Reciente)",
     sortYearAsc: "Por Año (Antiguo)",
+    errorOccurred: "Ocurrió un error, por favor inténtalo de nuevo.",
   },
   fr: {
     home: "Accueil", search: "Recherche", watchlists: "Listes",
@@ -489,6 +493,7 @@ const translations = {
     sortTitle: "Par Titre",
     sortYearDesc: "Par Année (Récent)",
     sortYearAsc: "Par Année (Ancien)",
+    errorOccurred: "Une erreur s'est produite, veuillez réessayer.",
   },
 };
 

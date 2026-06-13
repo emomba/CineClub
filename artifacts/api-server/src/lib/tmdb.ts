@@ -241,15 +241,28 @@ export async function getGenreList() {
   return { genres: data.genres ?? [] };
 }
 
+// Circuit breaker: when OMDb reports "Request limit reached!", pause all OMDb calls
+// until this timestamp (ms). Resets to 0 when limit expires.
+let omdbRateLimitUntil = 0;
+
 async function fetchImdbRating(imdbId: string | null): Promise<number | null> {
   if (!imdbId) return null;
   const apiKey = process.env.OMDB_API_KEY;
   if (!apiKey) return null;
+  if (Date.now() < omdbRateLimitUntil) return null; // circuit open
   try {
     const res = await fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=${apiKey}`);
     if (!res.ok) return null;
-    const data = await res.json();
-    if (data.Response === "False" || !data.imdbRating || data.imdbRating === "N/A") return null;
+    const data = await res.json() as Record<string, string>;
+    if (data.Response === "False") {
+      if (data.Error && data.Error.toLowerCase().includes("request limit")) {
+        // Open circuit for 60 minutes so we stop hammering a rate-limited key
+        omdbRateLimitUntil = Date.now() + 60 * 60 * 1000;
+        logger.warn({ imdbId }, "OMDb daily request limit reached – pausing OMDb calls for 60 min");
+      }
+      return null;
+    }
+    if (!data.imdbRating || data.imdbRating === "N/A") return null;
     return parseFloat(data.imdbRating);
   } catch {
     return null;
@@ -268,8 +281,8 @@ async function fetchImdbForMovie(tmdbId: number): Promise<{ imdbId: string | nul
     url.searchParams.set("api_key", apiKey);
     const res = await fetch(url.toString());
     if (!res.ok) throw new Error(`TMDB external_ids ${res.status}`);
-    const extIds = await res.json();
-    const imdbId: string | null = extIds.imdb_id ?? null;
+    const extIds = await res.json() as Record<string, unknown>;
+    const imdbId: string | null = (extIds.imdb_id as string) ?? null;
     const imdbRating = await fetchImdbRating(imdbId);
     const result = { imdbId, imdbRating };
     imdbCache.set(tmdbId, result);
@@ -302,6 +315,11 @@ export async function enrichMoviesWithImdb<T extends { tmdbId: number }>(
 export function sortByImdbRating<T extends { imdbRating?: number | null; voteAverage?: number }>(
   movies: T[],
 ): T[] {
+  // If no film has an IMDb rating (e.g. OMDb rate-limited), preserve the
+  // original TMDB order so that unreliable voteAverage doesn't surface
+  // niche films with a perfect-but-one-vote score at the top.
+  const hasAnyImdb = movies.some((m) => m.imdbRating != null);
+  if (!hasAnyImdb) return movies;
   return [...movies].sort((a, b) => {
     const ratingA = a.imdbRating ?? (a.voteAverage ?? 0) / 10;
     const ratingB = b.imdbRating ?? (b.voteAverage ?? 0) / 10;
@@ -352,10 +370,17 @@ export async function getMovieDetail(tmdbId: number, langCode = "tr") {
     } catch {}
   }
 
-  const imdbId: string | null = detail.imdb_id ?? null;
+  const imdbIdFromTmdb: string | null = detail.imdb_id ?? null;
 
-  // IMDb rating via OMDb (shows when API key is valid)
-  const imdbRating = await fetchImdbRating(imdbId);
+  // Use shared imdbCache so repeated detail views don't re-hit OMDb
+  const { imdbId, imdbRating } = await (async () => {
+    const tmdbIdNum: number = detail.id;
+    if (imdbCache.has(tmdbIdNum)) return imdbCache.get(tmdbIdNum)!;
+    const rating = await fetchImdbRating(imdbIdFromTmdb);
+    const entry = { imdbId: imdbIdFromTmdb, imdbRating: rating };
+    imdbCache.set(tmdbIdNum, entry);
+    return entry;
+  })();
 
   return {
     tmdbId: detail.id,
