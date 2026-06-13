@@ -198,7 +198,14 @@ function Router() {
 function ScrollToTop() {
   const [location] = useLocation();
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    // The scrollable container is <main> (overflow-y-auto inside AppLayout),
+    // not window — so window.scrollTo has no effect.
+    const main = document.querySelector("main");
+    if (main) {
+      main.scrollTop = 0;
+    } else {
+      window.scrollTo(0, 0);
+    }
   }, [location]);
   return null;
 }
