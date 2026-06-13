@@ -1,8 +1,12 @@
 import { PageTransition } from "@/components/PageTransition";
-import { useGetMe, useUpdateMe, useGetUserReviews, getGetUserReviewsQueryKey, getGetMeQueryKey } from "@workspace/api-client-react";
+import {
+  useGetMe, useUpdateMe, useGetUserReviews, getGetUserReviewsQueryKey, getGetMeQueryKey,
+  useGetWatchlists, useUpdateWatchlist, useDeleteWatchlist, getGetWatchlistsQueryKey
+} from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Settings, Save, Film } from "lucide-react";
+import { User, Settings, Save, Film, ListVideo, Pencil, Trash2, Check, X as XIcon } from "lucide-react";
 import { useState, useEffect } from "react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -38,11 +42,103 @@ function WatchedScroll({ movies }: { movies: WatchedMovie[] }) {
   );
 }
 
+function WatchlistItem({ list }: { list: { id: number; name: string; isDefault: boolean; movieCount: number } }) {
+  const queryClient = useQueryClient();
+  const updateWatchlist = useUpdateWatchlist();
+  const deleteWatchlist = useDeleteWatchlist();
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(list.name);
+
+  const saveRename = () => {
+    if (!editName.trim() || editName.trim() === list.name) { setEditing(false); return; }
+    updateWatchlist.mutate({ id: list.id, data: { name: editName.trim() } }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetWatchlistsQueryKey() });
+        setEditing(false);
+      },
+    });
+  };
+
+  const handleDelete = () => {
+    deleteWatchlist.mutate({ id: list.id }, {
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetWatchlistsQueryKey() }),
+    });
+  };
+
+  return (
+    <div className="flex items-center gap-3 bg-[#111] border border-gray-800 rounded-xl px-4 py-3 group hover:border-gray-700 transition-colors">
+      <div className={`p-1.5 rounded-lg shrink-0 ${list.isDefault ? "bg-amber-500/10 text-amber-500" : "bg-gray-800 text-gray-400"}`}>
+        {list.name === "Watched" ? <Film size={16} /> : <ListVideo size={16} />}
+      </div>
+
+      {editing ? (
+        <Input
+          value={editName}
+          onChange={e => setEditName(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") saveRename(); if (e.key === "Escape") setEditing(false); }}
+          className="flex-1 h-8 bg-black border-amber-500/50 focus-visible:ring-amber-500 text-sm"
+          autoFocus
+        />
+      ) : (
+        <span className="flex-1 font-medium text-sm truncate">{list.name}</span>
+      )}
+
+      <span className="text-xs text-gray-600 shrink-0">{list.movieCount} film</span>
+
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {editing ? (
+          <>
+            <button onClick={saveRename} disabled={updateWatchlist.isPending}
+              className="p-1.5 rounded-lg hover:bg-green-500/20 text-green-500 transition-colors">
+              <Check size={15} />
+            </button>
+            <button onClick={() => { setEditing(false); setEditName(list.name); }}
+              className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 transition-colors">
+              <XIcon size={15} />
+            </button>
+          </>
+        ) : (
+          <>
+            <button onClick={() => setEditing(true)}
+              className="p-1.5 rounded-lg hover:bg-amber-500/10 text-gray-500 hover:text-amber-500 transition-colors">
+              <Pencil size={14} />
+            </button>
+            {!list.isDefault && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-500 hover:text-red-500 transition-colors">
+                    <Trash2 size={14} />
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="bg-[#111] border-gray-800 text-white">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Listeyi sil</AlertDialogTitle>
+                    <AlertDialogDescription className="text-gray-400">
+                      <span className="text-white font-medium">"{list.name}"</span> listesi ve içindeki tüm filmler kalıcı olarak silinecek.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700">İptal</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700 text-white border-0">
+                      Sil
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Profile() {
   const { t } = useLang();
   const { data: user, isLoading } = useGetMe();
   const updateMe = useUpdateMe();
   const queryClient = useQueryClient();
+  const { data: watchlists } = useGetWatchlists();
 
   const { data: reviews } = useGetUserReviews(user?.clerkId || "", {
     query: { enabled: !!user?.clerkId, queryKey: getGetUserReviewsQueryKey(user?.clerkId || "") },
@@ -173,6 +269,21 @@ export default function Profile() {
           </div>
         )}
       </div>
+
+      {!isEditing && watchlists && watchlists.length > 0 && (
+        <div>
+          <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+            <ListVideo size={22} className="text-amber-500" />
+            Listelerim
+            <span className="text-gray-600 font-normal text-lg">({watchlists.length})</span>
+          </h3>
+          <div className="space-y-2">
+            {watchlists.map(list => (
+              <WatchlistItem key={list.id} list={list} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {!isEditing && watchedMovies.length > 0 && (
         <div>
