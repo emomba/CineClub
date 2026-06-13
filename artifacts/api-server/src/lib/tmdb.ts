@@ -9,6 +9,7 @@ async function tmdbFetch(path: string, params: Record<string, string | number> =
   const url = new URL(`${TMDB_BASE}${path}`);
   url.searchParams.set("api_key", apiKey);
   url.searchParams.set("language", "tr-TR");
+  url.searchParams.set("include_adult", "false");
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
   }
@@ -66,7 +67,52 @@ export async function getTopRatedMovies(page = 1) {
 }
 
 export async function getTrendingMovies() {
-  const data = await tmdbFetch("/trending/movie/week");
+  // Fetch trending + popular in parallel to get a diverse global mix
+  const [trendingData, popularData, intlData] = await Promise.all([
+    tmdbFetch("/trending/movie/week"),
+    tmdbFetch("/movie/popular", { page: 2 }),
+    tmdbFetch("/discover/movie", {
+      sort_by: "popularity.desc",
+      "vote_count.gte": 200,
+      page: 1,
+    }),
+  ]);
+
+  const seen = new Set<number>();
+  const combined: any[] = [];
+  for (const item of [
+    ...(trendingData.results ?? []),
+    ...(popularData.results ?? []),
+    ...(intlData.results ?? []),
+  ]) {
+    const mapped = mapMovie(item);
+    if (!seen.has(mapped.tmdbId) && mapped.posterPath) {
+      seen.add(mapped.tmdbId);
+      combined.push(mapped);
+    }
+  }
+
+  // Shuffle to mix sources
+  for (let i = combined.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [combined[i], combined[j]] = [combined[j], combined[i]];
+  }
+
+  return {
+    results: combined.slice(0, 40),
+    totalPages: 1,
+    page: 1,
+  };
+}
+
+export async function getClassicMovies(page = 1) {
+  const data = await tmdbFetch("/discover/movie", {
+    sort_by: "vote_count.desc",
+    "vote_average.gte": 7.5,
+    "vote_count.gte": 5000,
+    "primary_release_date.lte": "2005-12-31",
+    page,
+  });
   return {
     results: (data.results ?? []).map(mapMovie),
     totalPages: data.total_pages ?? 1,
@@ -154,6 +200,16 @@ export async function getMovieRecommendations(tmdbId: number) {
   };
 }
 
+export async function getActorMovies(personId: number) {
+  const data = await tmdbFetch(`/person/${personId}/movie_credits`);
+  const results = (data.cast ?? [])
+    .filter((m: any) => m.poster_path && (m.vote_count ?? 0) > 20)
+    .sort((a: any, b: any) => (b.popularity ?? 0) - (a.popularity ?? 0))
+    .slice(0, 20)
+    .map(mapMovie);
+  return { results };
+}
+
 export async function getMoviesByIds(tmdbIds: number[]) {
   const results = await Promise.all(
     tmdbIds.slice(0, 20).map((id) =>
@@ -164,18 +220,40 @@ export async function getMoviesByIds(tmdbIds: number[]) {
 }
 
 export async function getRandomMoviePick(): Promise<ReturnType<typeof mapMovie>> {
-  // Pick a random page between 1-15 and a random movie from that page
-  const randomPage = Math.floor(Math.random() * 15) + 1;
-  // Alternate between popular and top-rated for variety
-  const useTopRated = Math.random() > 0.5;
-  const data = useTopRated
-    ? await tmdbFetch("/movie/top_rated", { page: randomPage })
-    : await tmdbFetch("/movie/popular", { page: randomPage });
+  const strategy = Math.random();
+  const randomPage = Math.floor(Math.random() * 12) + 1;
+
+  let data: any;
+  try {
+    if (strategy < 0.35) {
+      // Obscure but high-rated gems
+      data = await tmdbFetch("/discover/movie", {
+        sort_by: "vote_average.desc",
+        "vote_count.gte": 300,
+        "vote_count.lte": 5000,
+        "vote_average.gte": 7.2,
+        "primary_release_date.lte": "2023-12-31",
+        page: Math.floor(Math.random() * 8) + 1,
+      });
+    } else if (strategy < 0.65) {
+      // Top rated classics and modern classics
+      data = await tmdbFetch("/movie/top_rated", { page: randomPage });
+    } else {
+      // Popular films from different years
+      data = await tmdbFetch("/discover/movie", {
+        sort_by: "popularity.desc",
+        "vote_count.gte": 500,
+        "primary_release_date.lte": "2024-12-31",
+        page: randomPage,
+      });
+    }
+  } catch {
+    data = await tmdbFetch("/movie/top_rated", { page: 1 });
+  }
 
   const movies = (data.results ?? []).map(mapMovie).filter((m: any) => m.posterPath);
   if (movies.length === 0) {
-    // Fallback to page 1 popular
-    const fallback = await tmdbFetch("/movie/popular", { page: 1 });
+    const fallback = await tmdbFetch("/movie/top_rated", { page: 1 });
     const fallbackMovies = (fallback.results ?? []).map(mapMovie);
     return fallbackMovies[Math.floor(Math.random() * fallbackMovies.length)];
   }

@@ -45,9 +45,7 @@ function MovieGrid({ movies, loading }: { movies: any[] | undefined; loading: bo
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
       {movies?.map((movie) => (
-        <div key={movie.tmdbId} className="w-full">
-          <MovieCard movie={movie} />
-        </div>
+        <div key={movie.tmdbId} className="w-full"><MovieCard movie={movie} /></div>
       ))}
     </div>
   );
@@ -68,45 +66,72 @@ export default function Home() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: englishMovies, isLoading: loadingEn } = useQuery<MovieList>({
-    queryKey: ["movies", "language", "en"],
-    queryFn: () => fetchMovies("/api/movies/language/en"),
-    staleTime: 5 * 60 * 1000,
+  const { data: classics1, isLoading: loadingClassics1 } = useQuery<MovieList>({
+    queryKey: ["movies", "classics", 1],
+    queryFn: () => fetchMovies("/api/movies/classics?page=1"),
+    staleTime: 30 * 60 * 1000,
   });
 
-  const { data: germanMovies, isLoading: loadingDe } = useQuery<MovieList>({
-    queryKey: ["movies", "language", "de"],
-    queryFn: () => fetchMovies("/api/movies/language/de"),
-    staleTime: 5 * 60 * 1000,
+  const { data: classics2 } = useQuery<MovieList>({
+    queryKey: ["movies", "classics", 2],
+    queryFn: () => fetchMovies("/api/movies/classics?page=2"),
+    staleTime: 30 * 60 * 1000,
   });
 
-  // Merge popular pages, deduplicate by tmdbId
-  const allPopular = (() => {
+  const { data: classics3 } = useQuery<MovieList>({
+    queryKey: ["movies", "classics", 3],
+    queryFn: () => fetchMovies("/api/movies/classics?page=3"),
+    staleTime: 30 * 60 * 1000,
+  });
+
+  const { data: classics4 } = useQuery<MovieList>({
+    queryKey: ["movies", "classics", 4],
+    queryFn: () => fetchMovies("/api/movies/classics?page=4"),
+    staleTime: 30 * 60 * 1000,
+  });
+
+  const { data: classics5 } = useQuery<MovieList>({
+    queryKey: ["movies", "classics", 5],
+    queryFn: () => fetchMovies("/api/movies/classics?page=5"),
+    staleTime: 30 * 60 * 1000,
+  });
+
+  // Deduplicate by tmdbId helper
+  function dedupe(movies: any[]): any[] {
     const seen = new Set<number>();
-    const merged = [
-      ...(popular1?.results ?? []),
-      ...(popular2?.results ?? []),
-      ...(popular3?.results ?? []),
-    ];
-    return merged.filter(m => {
+    return movies.filter(m => {
       if (seen.has(m.tmdbId)) return false;
       seen.add(m.tmdbId);
       return true;
     });
-  })();
+  }
+
+  const allPopular = dedupe([
+    ...(popular1?.results ?? []),
+    ...(popular2?.results ?? []),
+    ...(popular3?.results ?? []),
+  ]);
+
+  const allClassics = dedupe([
+    ...(classics1?.results ?? []),
+    ...(classics2?.results ?? []),
+    ...(classics3?.results ?? []),
+    ...(classics4?.results ?? []),
+    ...(classics5?.results ?? []),
+  ]).slice(0, 100);
 
   return (
     <PageTransition className="space-y-12">
-      {/* Popular - horizontal scroll */}
+      {/* Popular - horizontal scroll carousel */}
       <section>
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-2xl font-bold tracking-tight">{t("popularRightNow")}</h2>
-          <span className="text-sm text-gray-500">{allPopular.length > 0 ? `${allPopular.length} film` : ""}</span>
+          {allPopular.length > 0 && <span className="text-sm text-gray-600">{allPopular.length} film</span>}
         </div>
         <MovieRow movies={allPopular.length > 0 ? allPopular : popular1?.results} loading={l1 && allPopular.length === 0} />
       </section>
 
-      {/* Trending - grid */}
+      {/* Global Trending - grid with diverse mix */}
       <section>
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-2xl font-bold tracking-tight">{t("trending")}</h2>
@@ -125,20 +150,16 @@ export default function Home() {
         <MovieRow movies={topRated?.results} loading={loadingTopRated} />
       </section>
 
-      {/* American & British - horizontal scroll */}
+      {/* Classics - grid of 100 all-time greatest */}
       <section>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-2xl font-bold tracking-tight">🇺🇸🇬🇧 {t("americanBritish")}</h2>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">🎬 {t("classics")}</h2>
+            <p className="text-sm text-gray-500 mt-1">{t("classicsDesc")}</p>
+          </div>
+          {allClassics.length > 0 && <span className="text-sm text-gray-600">{allClassics.length} film</span>}
         </div>
-        <MovieRow movies={englishMovies?.results} loading={loadingEn} />
-      </section>
-
-      {/* German Films - horizontal scroll */}
-      <section>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-2xl font-bold tracking-tight">🇩🇪 {t("germanFilms")}</h2>
-        </div>
-        <MovieRow movies={germanMovies?.results} loading={loadingDe} />
+        <MovieGrid movies={allClassics.length > 0 ? allClassics : classics1?.results} loading={loadingClassics1 && allClassics.length === 0} />
       </section>
     </PageTransition>
   );

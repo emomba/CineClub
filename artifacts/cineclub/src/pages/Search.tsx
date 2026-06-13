@@ -5,8 +5,8 @@ import { useSearchMovies, useGetGenreList, useGetMoviesByGenre } from "@workspac
 import { Search as SearchIcon, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLang } from "@/lib/i18n";
 
-// Basic useDebounce hook implementation inline or we can create it
 function useLocalDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
   useEffect(() => {
@@ -17,12 +17,13 @@ function useLocalDebounce<T>(value: T, delay: number): T {
 }
 
 export default function Search() {
+  const { t } = useLang();
   const [query, setQuery] = useState("");
   const debouncedQuery = useLocalDebounce(query, 500);
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
 
   const { data: genresData } = useGetGenreList();
-  
+
   const { data: searchResults, isLoading: searching } = useSearchMovies(
     { q: debouncedQuery, page: 1 },
     { query: { enabled: !!debouncedQuery && !selectedGenre, queryKey: ["searchMovies", debouncedQuery] } }
@@ -34,12 +35,8 @@ export default function Search() {
   );
 
   const handleGenreClick = (genreId: number) => {
-    if (selectedGenre === genreId) {
-      setSelectedGenre(null);
-    } else {
-      setSelectedGenre(genreId);
-      setQuery(""); // Clear search when selecting a genre
-    }
+    if (selectedGenre === genreId) setSelectedGenre(null);
+    else { setSelectedGenre(genreId); setQuery(""); }
   };
 
   const results = selectedGenre ? genreResults?.results : (debouncedQuery ? searchResults?.results : []);
@@ -54,18 +51,12 @@ export default function Search() {
           </div>
           <Input
             value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              if (e.target.value) setSelectedGenre(null);
-            }}
-            placeholder="Search movies..."
+            onChange={(e) => { setQuery(e.target.value); if (e.target.value) setSelectedGenre(null); }}
+            placeholder={t("searchPlaceholder")}
             className="w-full h-14 pl-12 pr-10 bg-[#111] border-gray-800 text-lg rounded-2xl focus-visible:ring-amber-500 focus-visible:border-amber-500 transition-all placeholder:text-gray-500"
           />
           {query && (
-            <button 
-              onClick={() => setQuery("")}
-              className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-white"
-            >
+            <button onClick={() => setQuery("")} className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-white">
               <X size={20} />
             </button>
           )}
@@ -78,8 +69,8 @@ export default function Search() {
             key={genre.id}
             onClick={() => handleGenreClick(genre.id)}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-              selectedGenre === genre.id 
-                ? "bg-gradient-to-r from-amber-500 to-red-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.4)]" 
+              selectedGenre === genre.id
+                ? "bg-gradient-to-r from-amber-500 to-red-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.4)]"
                 : "bg-[#111] text-gray-300 hover:bg-[#222] border border-gray-800 hover:border-gray-600"
             }`}
           >
@@ -91,28 +82,24 @@ export default function Search() {
       <div className="pt-8">
         {isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {[...Array(12)].map((_, i) => (
-              <Skeleton key={i} className="w-full aspect-[2/3] rounded-xl bg-[#111]" />
-            ))}
+            {[...Array(12)].map((_, i) => <Skeleton key={i} className="w-full aspect-[2/3] rounded-xl bg-[#111]" />)}
           </div>
         ) : results && results.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {results.map((movie) => (
-              <div key={movie.tmdbId} className="w-full">
-                <MovieCard movie={movie} />
-              </div>
+              <div key={movie.tmdbId} className="w-full"><MovieCard movie={movie} /></div>
             ))}
           </div>
         ) : (debouncedQuery || selectedGenre) ? (
           <div className="text-center text-gray-500 py-20">
-            <p className="text-xl">No movies found</p>
-            <p className="text-sm mt-2">Try adjusting your search or category filter</p>
+            <p className="text-xl">{t("noMoviesFound")}</p>
+            <p className="text-sm mt-2">{t("tryAdjusting")}</p>
           </div>
         ) : (
           <div className="text-center text-gray-600 py-20 flex flex-col items-center">
             <SearchIcon size={48} className="mb-4 opacity-20" />
-            <p className="text-xl font-medium">Find your next favorite movie</p>
-            <p className="text-sm mt-2">Search by title or browse by genre</p>
+            <p className="text-xl font-medium">{t("findNextFavorite")}</p>
+            <p className="text-sm mt-2">{t("searchByTitle")}</p>
           </div>
         )}
       </div>

@@ -1,9 +1,8 @@
 import { useParams } from "wouter";
 import { PageTransition } from "@/components/PageTransition";
-import { 
-  useGetMovie, 
-  useGetMovieReviews, 
-  useGetFriendsWhoWatchedMovie,
+import {
+  useGetMovie,
+  useGetMovieReviews,
   useGetMovieUserStatus,
   useGetWatchlists,
   useAddMovieToWatchlist,
@@ -11,37 +10,28 @@ import {
   useUpsertReview
 } from "@workspace/api-client-react";
 import { getBackdropUrl, getPosterUrl, getProfileUrl } from "@/lib/tmdb";
-import { Star, Clock, Calendar, Play, Plus, Check, Eye, EyeOff, MessageSquare } from "lucide-react";
+import { Star, Clock, Calendar, Plus, Check, EyeOff, MessageSquare, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { getGetMovieUserStatusQueryKey, getGetMovieReviewsQueryKey } from "@workspace/api-client-react";
 import { toast } from "sonner";
+import { useLang } from "@/lib/i18n";
+import { MovieCard } from "@/components/MovieCard";
 
-function StarRating({ rating, setRating, readOnly = false }: { rating: number, setRating?: (r: number) => void, readOnly?: boolean }) {
+function StarRating({ rating, setRating, readOnly = false }: { rating: number; setRating?: (r: number) => void; readOnly?: boolean }) {
   return (
     <div className="flex gap-1">
       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
-        <button
-          key={star}
-          type="button"
-          disabled={readOnly}
-          onClick={() => setRating && setRating(star)}
-          className={`${readOnly ? "cursor-default" : "cursor-pointer transition-transform hover:scale-110"}`}
-        >
-          <Star 
-            size={readOnly ? 16 : 24} 
-            className={`${
-              star <= rating 
-                ? "text-amber-500 fill-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" 
-                : "text-gray-700"
-            }`} 
-          />
+        <button key={star} type="button" disabled={readOnly} onClick={() => setRating && setRating(star)}
+          className={`${readOnly ? "cursor-default" : "cursor-pointer transition-transform hover:scale-110"}`}>
+          <Star size={readOnly ? 16 : 24}
+            className={star <= rating ? "text-amber-500 fill-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" : "text-gray-700"} />
         </button>
       ))}
     </div>
@@ -49,6 +39,7 @@ function StarRating({ rating, setRating, readOnly = false }: { rating: number, s
 }
 
 function ReviewCard({ review }: { review: any }) {
+  const { t } = useLang();
   const [showSpoiler, setShowSpoiler] = useState(false);
 
   return (
@@ -75,33 +66,68 @@ function ReviewCard({ review }: { review: any }) {
           <span className="text-gray-500 text-xs">/10</span>
         </div>
       </div>
-      
+
       <div className="relative">
         {review.isSpoiler && !showSpoiler ? (
-          <div 
-            className="absolute inset-0 backdrop-blur-xl bg-black/40 z-10 flex items-center justify-center cursor-pointer rounded-lg border border-red-500/20"
-            onClick={() => setShowSpoiler(true)}
-          >
+          <div className="absolute inset-0 backdrop-blur-xl bg-black/40 z-10 flex items-center justify-center cursor-pointer rounded-lg border border-red-500/20"
+            onClick={() => setShowSpoiler(true)}>
             <div className="flex items-center gap-2 text-red-400 font-medium">
               <EyeOff size={18} />
-              <span>Contains Spoilers. Click to reveal.</span>
+              <span>{t("spoilerWarning")}</span>
             </div>
           </div>
         ) : null}
-        
         <p className={`text-gray-300 leading-relaxed whitespace-pre-wrap ${review.isSpoiler && !showSpoiler ? 'opacity-0 h-24 overflow-hidden' : ''}`}>
           {review.content}
         </p>
       </div>
-      
-      <div className="mt-4 text-xs text-gray-600">
-        {new Date(review.createdAt).toLocaleDateString()}
-      </div>
+
+      <div className="mt-4 text-xs text-gray-600">{new Date(review.createdAt).toLocaleDateString()}</div>
     </div>
   );
 }
 
+function ActorMoviesDialog({ actor, onClose }: { actor: { id: number; name: string } | null; onClose: () => void }) {
+  const { t } = useLang();
+  const { data, isLoading } = useQuery<{ results: any[] }>({
+    queryKey: ["actorMovies", actor?.id],
+    queryFn: () => fetch(`/api/actors/${actor!.id}/movies`).then(r => r.json()),
+    enabled: !!actor?.id,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  return (
+    <Dialog open={!!actor} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="bg-[#111] border-gray-800 text-white max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold flex items-center justify-between pr-8">
+            <span>{actor?.name} — {t("actorFilmography")}</span>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="pt-4">
+          {isLoading ? (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+              {[...Array(8)].map((_, i) => <Skeleton key={i} className="w-full aspect-[2/3] rounded-xl bg-[#222]" />)}
+            </div>
+          ) : data?.results && data.results.length > 0 ? (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+              {data.results.map(movie => (
+                <div key={movie.tmdbId} onClick={onClose}>
+                  <MovieCard movie={movie} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-8">{t("noMoviesFound")}</p>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function MovieDetail() {
+  const { t } = useLang();
   const params = useParams<{ tmdbId: string }>();
   const tmdbId = Number(params.tmdbId);
   const queryClient = useQueryClient();
@@ -118,8 +144,14 @@ export default function MovieDetail() {
     query: { enabled: !!tmdbId, queryKey: getGetMovieUserStatusQueryKey(tmdbId) }
   });
 
+  const { data: relatedMovies } = useQuery<{ results: any[] }>({
+    queryKey: ["movieRecs", tmdbId],
+    queryFn: () => fetch(`/api/movies/${tmdbId}/recommendations`).then(r => r.json()),
+    enabled: !!tmdbId,
+    staleTime: 10 * 60 * 1000,
+  });
+
   const { data: watchlists } = useGetWatchlists();
-  
   const addToList = useAddMovieToWatchlist();
   const removeFromList = useRemoveMovieFromWatchlist();
   const upsertReview = useUpsertReview();
@@ -128,68 +160,40 @@ export default function MovieDetail() {
   const [rating, setRating] = useState(0);
   const [isSpoiler, setIsSpoiler] = useState(false);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
-
-  useEffect(() => {
-    if (status?.hasReview && reviews) {
-      // Find my review and prepopulate if it exists
-      // Wait, we don't have myUserId here directly easily without useMe, 
-      // but let's just clear for now or we could load it.
-    }
-  }, [status, reviews]);
+  const [selectedActor, setSelectedActor] = useState<{ id: number; name: string } | null>(null);
 
   const handleToggleWatchlist = (watchlistId: number, isInList: boolean) => {
     if (!movie) return;
-    
     if (isInList) {
-      removeFromList.mutate({ 
-        id: watchlistId,
-        tmdbId: movie.tmdbId
-      }, {
+      removeFromList.mutate({ id: watchlistId, tmdbId: movie.tmdbId }, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetMovieUserStatusQueryKey(tmdbId) });
-          toast.success("Removed from watchlist");
+          toast.success(t("removedFromWatchlist"));
         }
       });
     } else {
-      addToList.mutate({ 
+      addToList.mutate({
         id: watchlistId,
-        data: { 
-          tmdbId: movie.tmdbId,
-          title: movie.title,
-          posterPath: movie.posterPath,
-          releaseYear: movie.releaseYear,
-          voteAverage: movie.voteAverage
-        } 
+        data: { tmdbId: movie.tmdbId, title: movie.title, posterPath: movie.posterPath, releaseYear: movie.releaseYear, voteAverage: movie.voteAverage }
       }, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetMovieUserStatusQueryKey(tmdbId) });
-          toast.success("Added to watchlist");
+          toast.success(t("addedToWatchlist"));
         }
       });
     }
   };
 
   const submitReview = () => {
-    if (rating === 0) {
-      toast.error("Please provide a rating");
-      return;
-    }
-    
+    if (rating === 0) { toast.error(t("ratingRequired")); return; }
     upsertReview.mutate({
-      data: {
-        tmdbId: movie!.tmdbId,
-        movieTitle: movie!.title,
-        moviePosterPath: movie!.posterPath,
-        rating,
-        content: reviewText,
-        isSpoiler
-      }
+      data: { tmdbId: movie!.tmdbId, movieTitle: movie!.title, moviePosterPath: movie!.posterPath, rating, content: reviewText, isSpoiler }
     }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetMovieReviewsQueryKey(tmdbId) });
         queryClient.invalidateQueries({ queryKey: getGetMovieUserStatusQueryKey(tmdbId) });
         setIsReviewOpen(false);
-        toast.success("Review posted successfully!");
+        toast.success(t("reviewPosted"));
       }
     });
   };
@@ -211,42 +215,32 @@ export default function MovieDetail() {
   }
 
   const backdropUrl = getBackdropUrl(movie.backdropPath);
-  const dominantColor = movie.dominantColor || "#f59e0b"; // Fallback to amber
 
   return (
     <PageTransition className="pb-20">
       {/* Backdrop */}
       <div className="absolute top-0 left-0 right-0 h-[60vh] z-0 overflow-hidden pointer-events-none">
         {backdropUrl && (
-          <div 
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
-            style={{ backgroundImage: `url(${backdropUrl})` }}
-          />
+          <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
+            style={{ backgroundImage: `url(${backdropUrl})` }} />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent" />
       </div>
 
       <div className="relative z-10 pt-[20vh] md:pt-[30vh] flex flex-col md:flex-row gap-8 items-start">
         {/* Poster */}
-        <div className="w-[200px] md:w-[300px] shrink-0 rounded-2xl overflow-hidden border-2 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] shadow-black group">
-          <img 
-            src={getPosterUrl(movie.posterPath)} 
-            alt={movie.title} 
-            className="w-full h-auto object-cover"
-          />
+        <div className="w-[200px] md:w-[300px] shrink-0 rounded-2xl overflow-hidden border-2 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+          <img src={getPosterUrl(movie.posterPath)} alt={movie.title} className="w-full h-auto object-cover" />
         </div>
 
         {/* Details */}
         <div className="flex-1 space-y-6">
           <div>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-2 drop-shadow-lg">
-              {movie.title}
-            </h1>
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-2 drop-shadow-lg">{movie.title}</h1>
             <div className="flex flex-wrap items-center gap-4 text-gray-300 font-medium">
               {movie.releaseYear && (
                 <div className="flex items-center gap-1">
-                  <Calendar size={16} className="text-amber-500" />
-                  <span>{movie.releaseYear}</span>
+                  <Calendar size={16} className="text-amber-500" /><span>{movie.releaseYear}</span>
                 </div>
               )}
               {movie.runtime && (
@@ -264,49 +258,36 @@ export default function MovieDetail() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {movie.genres.map(g => (
+            {movie.genres.map((g: any) => (
               <span key={g.id} className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-sm font-medium border border-white/5">
                 {g.name}
               </span>
             ))}
           </div>
 
+          {/* Action buttons — no Watch Trailer link */}
           <div className="flex flex-wrap gap-4 pt-2">
-            {movie.trailerKey && (
-              <a 
-                href={`https://www.youtube.com/watch?v=${movie.trailerKey}`} 
-                target="_blank" 
-                rel="noreferrer"
-                className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-red-500 text-black font-bold px-6 py-3 rounded-xl hover:scale-105 transition-transform shadow-[0_0_20px_rgba(245,158,11,0.3)]"
-              >
-                <Play size={20} className="fill-black" />
-                <span>Watch Trailer</span>
-              </a>
-            )}
-
             <Dialog>
               <DialogTrigger asChild>
                 <button className="flex items-center gap-2 bg-[#111] hover:bg-[#222] border border-gray-800 text-white font-medium px-6 py-3 rounded-xl transition-colors">
                   {status?.watchlistIds && status.watchlistIds.length > 0 ? (
-                    <><Check size={20} className="text-green-500" /> <span>In Watchlist</span></>
+                    <><Check size={20} className="text-green-500" /><span>{t("inWatchlist")}</span></>
                   ) : (
-                    <><Plus size={20} /> <span>Add to List</span></>
+                    <><Plus size={20} /><span>{t("addToList")}</span></>
                   )}
                 </button>
               </DialogTrigger>
               <DialogContent className="bg-[#111] border-gray-800 text-white sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle className="text-xl font-bold">Add to Watchlist</DialogTitle>
+                  <DialogTitle className="text-xl font-bold">{t("addToWatchlist")}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-3 pt-4">
                   {watchlists?.map(list => {
                     const isInList = status?.watchlistIds?.includes(list.id) || false;
                     return (
-                      <div 
-                        key={list.id} 
+                      <div key={list.id}
                         className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 cursor-pointer border border-transparent hover:border-gray-800 transition-colors"
-                        onClick={() => handleToggleWatchlist(list.id, isInList)}
-                      >
+                        onClick={() => handleToggleWatchlist(list.id, isInList)}>
                         <div className="font-medium">{list.name}</div>
                         <div className={`w-6 h-6 rounded-full border flex items-center justify-center ${isInList ? 'bg-amber-500 border-amber-500 text-black' : 'border-gray-600'}`}>
                           {isInList && <Check size={14} strokeWidth={3} />}
@@ -321,75 +302,89 @@ export default function MovieDetail() {
             <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
               <DialogTrigger asChild>
                 <button className="flex items-center gap-2 bg-[#111] hover:bg-[#222] border border-gray-800 text-white font-medium px-6 py-3 rounded-xl transition-colors">
-                  <MessageSquare size={20} /> 
-                  <span>{status?.hasReview ? 'Edit Review' : 'Add Review'}</span>
+                  <MessageSquare size={20} />
+                  <span>{status?.hasReview ? t("editReview") : t("writeReview")}</span>
                 </button>
               </DialogTrigger>
               <DialogContent className="bg-[#111] border-gray-800 text-white sm:max-w-lg">
                 <DialogHeader>
-                  <DialogTitle className="text-xl font-bold">{status?.hasReview ? 'Edit' : 'Write'} Review for {movie.title}</DialogTitle>
+                  <DialogTitle className="text-xl font-bold">
+                    {status?.hasReview ? t("editReview") : t("writeReview")} — {movie.title}
+                  </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-6 pt-4">
                   <div className="flex flex-col items-center gap-3">
-                    <span className="text-gray-400 font-medium">Your Rating</span>
+                    <span className="text-gray-400 font-medium">{t("yourRating")}</span>
                     <StarRating rating={rating} setRating={setRating} />
                   </div>
-                  
                   <div className="space-y-2">
-                    <Label htmlFor="review">Your thoughts</Label>
-                    <Textarea 
-                      id="review"
-                      value={reviewText}
-                      onChange={e => setReviewText(e.target.value)}
-                      placeholder="What did you think of the movie?"
-                      className="min-h-[120px] bg-black border-gray-800 resize-none focus-visible:ring-amber-500"
-                    />
+                    <Label htmlFor="review">{t("yourThoughts")}</Label>
+                    <Textarea id="review" value={reviewText} onChange={e => setReviewText(e.target.value)}
+                      placeholder={t("movieThoughts")}
+                      className="min-h-[120px] bg-black border-gray-800 resize-none focus-visible:ring-amber-500" />
                   </div>
-
                   <div className="flex items-center justify-between bg-black/50 p-3 rounded-xl border border-gray-800">
                     <div className="flex items-center gap-3 text-red-400">
                       <EyeOff size={20} />
                       <div className="space-y-0.5">
-                        <Label className="text-white cursor-pointer" htmlFor="spoiler">Contains Spoilers</Label>
-                        <p className="text-xs text-gray-500">Blur this review for others</p>
+                        <Label className="text-white cursor-pointer" htmlFor="spoiler">{t("containsSpoilers")}</Label>
+                        <p className="text-xs text-gray-500">{t("blurReview")}</p>
                       </div>
                     </div>
                     <Switch id="spoiler" checked={isSpoiler} onCheckedChange={setIsSpoiler} />
                   </div>
-
-                  <Button 
-                    onClick={submitReview}
-                    className="w-full bg-gradient-to-r from-amber-500 to-red-500 text-black font-bold hover:from-amber-400 hover:to-red-400 py-6 text-lg rounded-xl"
-                  >
-                    Post Review
+                  <Button onClick={submitReview}
+                    className="w-full bg-gradient-to-r from-amber-500 to-red-500 text-black font-bold hover:from-amber-400 hover:to-red-400 py-6 text-lg rounded-xl">
+                    {t("postReview")}
                   </Button>
                 </div>
               </DialogContent>
             </Dialog>
           </div>
 
+          {/* Overview */}
           <div className="pt-6">
-            <h3 className="text-xl font-bold mb-3">Overview</h3>
+            <h3 className="text-xl font-bold mb-3">{t("overview")}</h3>
             <p className="text-gray-300 leading-relaxed text-lg">{movie.overview}</p>
           </div>
 
+          {/* Embedded YouTube Trailer */}
+          {movie.trailerKey && (
+            <div className="pt-4">
+              <div className="w-full aspect-video rounded-2xl overflow-hidden border border-gray-800 shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
+                <iframe
+                  src={`https://www.youtube.com/embed/${movie.trailerKey}?rel=0&modestbranding=1`}
+                  title={`${movie.title} Trailer`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="w-full h-full"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Cast — clickable for filmography */}
           {movie.cast && movie.cast.length > 0 && (
             <div className="pt-6">
-              <h3 className="text-xl font-bold mb-4">Cast</h3>
+              <h3 className="text-xl font-bold mb-4">{t("cast")}</h3>
               <div className="flex gap-4 overflow-x-auto pb-4 snap-x hide-scrollbar">
-                {movie.cast.slice(0, 10).map(person => (
-                  <div key={person.id} className="w-[120px] shrink-0 snap-start">
-                    <div className="aspect-[2/3] rounded-xl overflow-hidden bg-[#111] mb-2 border border-gray-800">
-                      <img 
-                        src={getProfileUrl(person.profilePath)} 
+                {movie.cast.slice(0, 12).map((person: any) => (
+                  <button
+                    key={person.id}
+                    onClick={() => setSelectedActor({ id: person.id, name: person.name })}
+                    className="w-[120px] shrink-0 snap-start text-left group focus:outline-none"
+                  >
+                    <div className="aspect-[2/3] rounded-xl overflow-hidden bg-[#111] mb-2 border border-gray-800 group-hover:border-amber-500/50 transition-colors group-hover:scale-105 transform duration-200">
+                      <img
+                        src={getProfileUrl(person.profilePath)}
                         alt={person.name}
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />
                     </div>
-                    <div className="font-medium text-sm line-clamp-1">{person.name}</div>
+                    <div className="font-medium text-sm line-clamp-1 group-hover:text-amber-500 transition-colors">{person.name}</div>
                     <div className="text-xs text-gray-500 line-clamp-1">{person.character}</div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -400,13 +395,13 @@ export default function MovieDetail() {
       {/* Reviews Section */}
       <div className="mt-20 border-t border-gray-800 pt-12">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-3xl font-bold tracking-tight">Club Reviews</h2>
+          <h2 className="text-3xl font-bold tracking-tight">{t("clubReviews")}</h2>
           <div className="bg-[#111] px-4 py-2 rounded-lg border border-gray-800 flex items-center gap-2">
-            <span className="text-gray-400 font-medium">Average:</span>
+            <span className="text-gray-400 font-medium">{t("average")}:</span>
             <Star size={16} className="text-amber-500 fill-amber-500" />
             <span className="font-bold text-lg text-white">
-              {reviews && reviews.length > 0 
-                ? (reviews.reduce((a, b) => a + b.rating, 0) / reviews.length).toFixed(1) 
+              {reviews && reviews.length > 0
+                ? (reviews.reduce((a: number, b: any) => a + b.rating, 0) / reviews.length).toFixed(1)
                 : "-"}
             </span>
           </div>
@@ -414,20 +409,33 @@ export default function MovieDetail() {
 
         {reviews && reviews.length > 0 ? (
           <div className="grid md:grid-cols-2 gap-6">
-            {reviews.map(review => (
-              <ReviewCard key={review.id} review={review} />
-            ))}
+            {reviews.map((review: any) => <ReviewCard key={review.id} review={review} />)}
           </div>
         ) : (
           <div className="bg-[#0a0a0a] border border-gray-800 rounded-2xl p-12 text-center">
             <MessageSquare size={48} className="mx-auto text-gray-700 mb-4" />
-            <h3 className="text-xl font-bold text-gray-300 mb-2">No reviews yet</h3>
-            <p className="text-gray-500 max-w-md mx-auto">
-              None of your friends have reviewed this movie yet. Be the first to share your thoughts!
-            </p>
+            <h3 className="text-xl font-bold text-gray-300 mb-2">{t("noReviewsClub")}</h3>
+            <p className="text-gray-500 max-w-md mx-auto">{t("noReviewsClubDesc")}</p>
           </div>
         )}
       </div>
+
+      {/* More Like This */}
+      {relatedMovies && relatedMovies.results && relatedMovies.results.length > 0 && (
+        <div className="mt-16 border-t border-gray-800 pt-12">
+          <h2 className="text-3xl font-bold tracking-tight mb-6">{t("moreLikeThis")}</h2>
+          <div className="flex gap-4 overflow-x-auto pb-4 snap-x hide-scrollbar">
+            {relatedMovies.results.slice(0, 20).map((m: any) => (
+              <div key={m.tmdbId} className="snap-start shrink-0">
+                <MovieCard movie={m} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Actor Filmography Dialog */}
+      <ActorMoviesDialog actor={selectedActor} onClose={() => setSelectedActor(null)} />
     </PageTransition>
   );
 }

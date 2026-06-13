@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { PageTransition } from "@/components/PageTransition";
 import { MovieCard } from "@/components/MovieCard";
-import { 
-  useGetWatchlists, 
-  useGetWatchlistMovies, 
+import {
+  useGetWatchlists,
+  useGetWatchlistMovies,
   useCreateWatchlist,
   getGetWatchlistMoviesQueryKey
 } from "@workspace/api-client-react";
@@ -14,8 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useLang } from "@/lib/i18n";
 
-function WatchlistSection({ watchlistId, name, isDefault }: { watchlistId: number, name: string, isDefault: boolean }) {
+function WatchlistSection({ watchlistId, name, isDefault }: { watchlistId: number; name: string; isDefault: boolean }) {
+  const { t } = useLang();
   const { data: movies, isLoading } = useGetWatchlistMovies(watchlistId, {
     query: { enabled: !!watchlistId, queryKey: getGetWatchlistMoviesQueryKey(watchlistId) }
   });
@@ -36,9 +38,7 @@ function WatchlistSection({ watchlistId, name, isDefault }: { watchlistId: numbe
 
       {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} className="w-full aspect-[2/3] rounded-xl bg-[#111]" />
-          ))}
+          {[...Array(6)].map((_, i) => <Skeleton key={i} className="w-full aspect-[2/3] rounded-xl bg-[#111]" />)}
         </div>
       ) : movies && movies.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
@@ -51,10 +51,8 @@ function WatchlistSection({ watchlistId, name, isDefault }: { watchlistId: numbe
       ) : (
         <div className="bg-[#0a0a0a] border border-gray-800 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center text-center">
           <LayoutGrid size={40} className="text-gray-700 mb-4" />
-          <h3 className="text-lg font-bold text-gray-400 mb-2">This list is empty</h3>
-          <p className="text-gray-600 max-w-sm">
-            Search for movies to add them to your {name.toLowerCase()} list.
-          </p>
+          <h3 className="text-lg font-bold text-gray-400 mb-2">{t("listEmpty")}</h3>
+          <p className="text-gray-600 max-w-sm">{t("searchMoviesToAdd")}</p>
         </div>
       )}
     </div>
@@ -62,6 +60,7 @@ function WatchlistSection({ watchlistId, name, isDefault }: { watchlistId: numbe
 }
 
 export default function Watchlists() {
+  const { t } = useLang();
   const { data: watchlists, isLoading } = useGetWatchlists();
   const createWatchlist = useCreateWatchlist();
   const queryClient = useQueryClient();
@@ -70,15 +69,12 @@ export default function Watchlists() {
 
   const handleCreateList = () => {
     if (!newListName.trim()) return;
-    
-    createWatchlist.mutate({
-      data: { name: newListName.trim() }
-    }, {
+    createWatchlist.mutate({ data: { name: newListName.trim() } }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["getWatchlists"] });
         setIsOpen(false);
         setNewListName("");
-        toast.success("Watchlist created!");
+        toast.success(t("watchlistCreated"));
       }
     });
   };
@@ -87,37 +83,38 @@ export default function Watchlists() {
     <PageTransition>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">Your Lists</h1>
-          <p className="text-gray-400">Manage what you've seen and what's next.</p>
+          <h1 className="text-4xl font-bold tracking-tight mb-2">{t("yourLists")}</h1>
+          <p className="text-gray-400">{t("manageLists")}</p>
         </div>
 
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <button className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-red-500 text-black font-bold px-6 py-3 rounded-xl hover:from-amber-400 hover:to-red-400 transition-all shadow-[0_0_15px_rgba(245,158,11,0.2)] hover:shadow-[0_0_25px_rgba(245,158,11,0.4)]">
+            <button className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-red-500 text-black font-bold px-6 py-3 rounded-xl hover:from-amber-400 hover:to-red-400 transition-all shadow-[0_0_15px_rgba(245,158,11,0.2)]">
               <Plus size={20} />
-              <span>Create New List</span>
+              <span>{t("createNewList")}</span>
             </button>
           </DialogTrigger>
           <DialogContent className="bg-[#111] border-gray-800 text-white sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold">Create a new watchlist</DialogTitle>
+              <DialogTitle className="text-xl font-bold">{t("createNewListTitle")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-400">List Name</label>
-                <Input 
+                <label className="text-sm font-medium text-gray-400">{t("listNameLabel")}</label>
+                <Input
                   value={newListName}
                   onChange={(e) => setNewListName(e.target.value)}
-                  placeholder="e.g. Sci-Fi Masterpieces" 
+                  onKeyDown={(e) => e.key === "Enter" && handleCreateList()}
+                  placeholder={t("listName")}
                   className="bg-black border-gray-800 focus-visible:ring-amber-500"
                 />
               </div>
-              <Button 
+              <Button
                 onClick={handleCreateList}
                 disabled={!newListName.trim() || createWatchlist.isPending}
                 className="w-full bg-gradient-to-r from-amber-500 to-red-500 text-black font-bold hover:from-amber-400 hover:to-red-400"
               >
-                {createWatchlist.isPending ? "Creating..." : "Create List"}
+                {createWatchlist.isPending ? t("creating") : t("createListBtn")}
               </Button>
             </div>
           </DialogContent>
@@ -128,14 +125,11 @@ export default function Watchlists() {
         <div className="space-y-8">
           <Skeleton className="h-10 w-48 bg-[#111]" />
           <div className="flex gap-4">
-            {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="w-[200px] aspect-[2/3] rounded-xl bg-[#111]" />
-            ))}
+            {[...Array(5)].map((_, i) => <Skeleton key={i} className="w-[200px] aspect-[2/3] rounded-xl bg-[#111]" />)}
           </div>
         </div>
       ) : watchlists ? (
         <div className="space-y-4">
-          {/* Always show Default lists first, then custom ones */}
           {watchlists.map(list => (
             <WatchlistSection key={list.id} watchlistId={list.id} name={list.name} isDefault={list.isDefault} />
           ))}
