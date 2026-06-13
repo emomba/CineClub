@@ -18,6 +18,7 @@ import {
   getActorMovies,
   getMoviesByIds,
   getRandomMoviePick,
+  enrichMoviesWithImdb,
 } from "../lib/tmdb";
 
 const router: IRouter = Router();
@@ -38,31 +39,36 @@ router.get("/movies/popular", async (req, res): Promise<void> => {
 
 router.get("/movies/recent-popular", async (req, res): Promise<void> => {
   const data = await getRecentPopularMovies();
-  res.json(data);
+  const results = await enrichMoviesWithImdb(data.results);
+  res.json({ ...data, results });
 });
 
 router.get("/movies/trending", async (req, res): Promise<void> => {
   const data = await getTrendingMovies();
-  res.json(data);
+  const results = await enrichMoviesWithImdb(data.results);
+  res.json({ ...data, results });
 });
 
 router.get("/movies/top-rated", async (req, res): Promise<void> => {
   const page = parseInt(String(req.query.page ?? "1"), 10);
   const data = await getTopRatedMovies(page);
-  res.json(data);
+  const results = await enrichMoviesWithImdb(data.results);
+  res.json({ ...data, results });
 });
 
 router.get("/movies/classics", async (req, res): Promise<void> => {
   const page = parseInt(String(req.query.page ?? "1"), 10);
   const data = await getClassicMovies(page);
-  res.json(data);
+  const results = await enrichMoviesWithImdb(data.results);
+  res.json({ ...data, results });
 });
 
 router.get("/movies/language/:lang", async (req, res): Promise<void> => {
   const lang = String(req.params.lang);
   const page = parseInt(String(req.query.page ?? "1"), 10);
   const data = await getMoviesByLanguage(lang, page);
-  res.json(data);
+  const results = await enrichMoviesWithImdb(data.results);
+  res.json({ ...data, results });
 });
 
 router.get("/movies/genres", async (req, res): Promise<void> => {
@@ -77,7 +83,8 @@ router.get("/movies/genre/:genreId", async (req, res): Promise<void> => {
   const sortBy = String(req.query.sortBy ?? "popularity.desc");
   const runtimeFilter = String(req.query.runtimeFilter ?? "all") as "all" | "movie" | "short";
   const data = await getMoviesByGenre(genreId, page, sortBy, runtimeFilter);
-  res.json(data);
+  const results = await enrichMoviesWithImdb(data.results);
+  res.json({ ...data, results });
 });
 
 router.get("/actors/:personId", async (req, res): Promise<void> => {

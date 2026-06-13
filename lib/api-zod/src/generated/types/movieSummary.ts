@@ -17,6 +17,8 @@ export interface MovieSummary {
   releaseYear: number | null;
   voteAverage: number;
   popularity: number;
+  /** @nullable */
+  imdbRating?: number | null;
   genreIds?: number[];
   overview?: string;
 }

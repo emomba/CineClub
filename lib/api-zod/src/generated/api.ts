@@ -95,6 +95,7 @@ export const SearchMoviesResponse = zod.object({
   "releaseYear": zod.number().nullable(),
   "voteAverage": zod.number(),
   "popularity": zod.number(),
+  "imdbRating": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "overview": zod.string().optional()
 })),
@@ -119,6 +120,7 @@ export const GetPopularMoviesResponse = zod.object({
   "releaseYear": zod.number().nullable(),
   "voteAverage": zod.number(),
   "popularity": zod.number(),
+  "imdbRating": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "overview": zod.string().optional()
 })),
@@ -139,6 +141,7 @@ export const GetTrendingMoviesResponse = zod.object({
   "releaseYear": zod.number().nullable(),
   "voteAverage": zod.number(),
   "popularity": zod.number(),
+  "imdbRating": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "overview": zod.string().optional()
 })),
@@ -163,6 +166,7 @@ export const GetMoviesByGenreResponse = zod.object({
   "releaseYear": zod.number().nullable(),
   "voteAverage": zod.number(),
   "popularity": zod.number(),
+  "imdbRating": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "overview": zod.string().optional()
 })),
@@ -230,6 +234,7 @@ export const GetMovieRecommendationsResponse = zod.object({
   "releaseYear": zod.number().nullable(),
   "voteAverage": zod.number(),
   "popularity": zod.number(),
+  "imdbRating": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "overview": zod.string().optional()
 })),
@@ -613,6 +618,7 @@ export const GetRecommendationInboxResponseItem = zod.object({
   "releaseYear": zod.number().nullable(),
   "voteAverage": zod.number(),
   "popularity": zod.number(),
+  "imdbRating": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "overview": zod.string().optional()
 }),
@@ -709,6 +715,7 @@ export const GetRandomPickResponse = zod.object({
   "releaseYear": zod.number().nullable(),
   "voteAverage": zod.number(),
   "popularity": zod.number(),
+  "imdbRating": zod.number().nullish(),
   "genreIds": zod.array(zod.number()).optional(),
   "overview": zod.string().optional()
 })

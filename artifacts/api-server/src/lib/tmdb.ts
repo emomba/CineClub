@@ -254,6 +254,49 @@ async function fetchImdbRating(imdbId: string | null): Promise<number | null> {
   }
 }
 
+// In-memory cache: tmdbId → { imdbId, imdbRating }
+const imdbCache = new Map<number, { imdbId: string | null; imdbRating: number | null }>();
+
+async function fetchImdbForMovie(tmdbId: number): Promise<{ imdbId: string | null; imdbRating: number | null }> {
+  if (imdbCache.has(tmdbId)) return imdbCache.get(tmdbId)!;
+  try {
+    const apiKey = process.env.TMDB_API_KEY;
+    if (!apiKey) return { imdbId: null, imdbRating: null };
+    const url = new URL(`${TMDB_BASE}/movie/${tmdbId}/external_ids`);
+    url.searchParams.set("api_key", apiKey);
+    const res = await fetch(url.toString());
+    if (!res.ok) throw new Error(`TMDB external_ids ${res.status}`);
+    const extIds = await res.json();
+    const imdbId: string | null = extIds.imdb_id ?? null;
+    const imdbRating = await fetchImdbRating(imdbId);
+    const result = { imdbId, imdbRating };
+    imdbCache.set(tmdbId, result);
+    return result;
+  } catch {
+    const result = { imdbId: null, imdbRating: null };
+    imdbCache.set(tmdbId, result);
+    return result;
+  }
+}
+
+export async function enrichMoviesWithImdb<T extends { tmdbId: number }>(
+  movies: T[],
+  concurrency = 5,
+): Promise<(T & { imdbRating: number | null })[]> {
+  const enriched: (T & { imdbRating: number | null })[] = [];
+  for (let i = 0; i < movies.length; i += concurrency) {
+    const batch = movies.slice(i, i + concurrency);
+    const results = await Promise.all(
+      batch.map(async (movie) => {
+        const { imdbRating } = await fetchImdbForMovie(movie.tmdbId);
+        return { ...movie, imdbRating };
+      }),
+    );
+    enriched.push(...results);
+  }
+  return enriched;
+}
+
 export async function getMovieDetail(tmdbId: number, langCode = "tr") {
   const tmdbLang = TMDB_LANG[langCode] ?? "tr-TR";
   const fallbackLang = tmdbLang === "en-US" ? null : "en-US";
