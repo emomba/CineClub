@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { PageTransition } from "@/components/PageTransition";
 import { MovieCard } from "@/components/MovieCard";
 import { useSearchMovies, useGetGenreList } from "@workspace/api-client-react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { Search as SearchIcon, X, ArrowUpDown, Filter, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,6 +27,8 @@ const SORT_OPTIONS = [
   { value: "primary_release_date.asc", labelKey: "sortYearAsc" },
 ] as const;
 
+type GenrePage = { results: any[]; totalPages: number; page: number };
+
 export default function Search() {
   const { t } = useLang();
   const [location] = useLocation();
@@ -37,11 +39,6 @@ export default function Search() {
   const [sortBy, setSortBy] = useState("imdb.desc");
   const [sortOpen, setSortOpen] = useState(false);
   const [runtimeFilter, setRuntimeFilter] = useState<"all" | "movie" | "short">("all");
-
-  // Pagination state for genre browsing
-  const [genrePage, setGenrePage] = useState(1);
-  const [accumulatedMovies, setAccumulatedMovies] = useState<any[]>([]);
-  const prevKeyRef = useRef<string>("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -54,16 +51,6 @@ export default function Search() {
     }
   }, [location]);
 
-  // Reset pagination when genre/sort/filter changes
-  const filterKey = `${selectedGenre}-${sortBy}-${runtimeFilter}`;
-  useEffect(() => {
-    if (prevKeyRef.current !== filterKey) {
-      prevKeyRef.current = filterKey;
-      setGenrePage(1);
-      setAccumulatedMovies([]);
-    }
-  }, [filterKey]);
-
   const { data: genresData } = useGetGenreList();
 
   const { data: searchResults, isLoading: searching } = useSearchMovies(
@@ -71,32 +58,41 @@ export default function Search() {
     { query: { enabled: !!debouncedQuery && !selectedGenre, queryKey: ["searchMovies", debouncedQuery] } }
   );
 
-  const { data: genreData, isLoading: loadingGenre, isFetching: fetchingGenre } = useQuery<{
-    results: any[];
-    totalPages: number;
-    page: number;
-  }>({
-    queryKey: ["moviesByGenre", selectedGenre, sortBy, runtimeFilter, genrePage],
-    queryFn: () =>
-      fetch(`/api/movies/genre/${selectedGenre}?sortBy=${sortBy}&runtimeFilter=${runtimeFilter}&page=${genrePage}`)
-        .then(r => r.json()),
+  const {
+    data: genreInfiniteData,
+    isLoading: loadingGenre,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery<GenrePage>({
+    queryKey: ["moviesByGenre", selectedGenre, sortBy, runtimeFilter],
+    queryFn: ({ pageParam }) =>
+      fetch(
+        `/api/movies/genre/${selectedGenre}?sortBy=${sortBy}&runtimeFilter=${runtimeFilter}&page=${pageParam ?? 1}`
+      ).then(r => r.json()),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      sortBy !== "imdb.desc" && lastPage.page < lastPage.totalPages
+        ? lastPage.page + 1
+        : undefined,
     enabled: !!selectedGenre,
     staleTime: 5 * 60 * 1000,
   });
 
-  // Accumulate movies across pages
-  useEffect(() => {
-    if (!genreData?.results) return;
-    if (genrePage === 1) {
-      setAccumulatedMovies(genreData.results);
-    } else {
-      setAccumulatedMovies(prev => {
-        const existingIds = new Set(prev.map((m: any) => m.tmdbId));
-        const newOnes = genreData.results.filter((m: any) => !existingIds.has(m.tmdbId));
-        return [...prev, ...newOnes];
-      });
+  const accumulatedMovies = useMemo(() => {
+    if (!genreInfiniteData) return [];
+    const seen = new Set<number>();
+    const all: any[] = [];
+    for (const page of genreInfiniteData.pages) {
+      for (const m of page.results ?? []) {
+        if (!seen.has(m.tmdbId)) {
+          seen.add(m.tmdbId);
+          all.push(m);
+        }
+      }
     }
-  }, [genreData, genrePage]);
+    return all;
+  }, [genreInfiniteData]);
 
   const handleGenreClick = (genreId: number, genreName: string) => {
     if (selectedGenre === genreId) {
@@ -109,14 +105,8 @@ export default function Search() {
     }
   };
 
-  const genreResults = selectedGenre ? accumulatedMovies : undefined;
-  const isLoading = selectedGenre ? (loadingGenre && genrePage === 1) : (debouncedQuery ? searching : false);
-  const results = selectedGenre ? genreResults : (debouncedQuery ? searchResults?.results : []);
-
-  const hasMorePages = selectedGenre && genreData && sortBy !== "imdb.desc"
-    ? genreData.totalPages > genrePage
-    : false;
-  const isLoadingMore = fetchingGenre && genrePage > 1;
+  const isLoading = selectedGenre ? (loadingGenre) : (debouncedQuery ? searching : false);
+  const results = selectedGenre ? accumulatedMovies : (debouncedQuery ? searchResults?.results : []);
 
   const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.labelKey ?? "sortPopularity";
 
@@ -232,25 +222,23 @@ export default function Search() {
               ))}
             </div>
 
-            {/* Load More */}
-            {hasMorePages && (
+            {/* Load More — only shown for paginated sorts (not imdb.desc which returns all at once) */}
+            {hasNextPage && (
               <div className="flex justify-center mt-8">
                 <button
-                  onClick={() => setGenrePage(p => p + 1)}
-                  disabled={isLoadingMore}
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
                   className="flex items-center gap-2 bg-[#111] border border-gray-800 hover:border-amber-500/50 text-gray-300 hover:text-white px-8 py-3 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
                 >
-                  {isLoadingMore ? (
-                    <><Loader2 size={16} className="animate-spin text-amber-500" /> Yükleniyor...</>
-                  ) : (
-                    "Daha Fazla Yükle"
-                  )}
+                  {isFetchingNextPage
+                    ? <><Loader2 size={16} className="animate-spin text-amber-500" /> Yükleniyor...</>
+                    : "Daha Fazla Yükle"
+                  }
                 </button>
               </div>
             )}
 
-            {/* Loading more skeleton */}
-            {isLoadingMore && (
+            {isFetchingNextPage && (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mt-4">
                 {[...Array(6)].map((_, i) => <Skeleton key={i} className="w-full aspect-[2/3] rounded-xl bg-[#111]" />)}
               </div>

@@ -141,7 +141,7 @@ function FavoritesSection({ watchlists }: { watchlists: { id: number; name: stri
 
   const favList = watchlists.find(l => l.name === "Favoriler");
   const { data: favMovies, isLoading } = useGetWatchlistMovies(favList?.id ?? 0, {
-    query: { enabled: !!favList },
+    query: { enabled: !!favList, queryKey: getGetWatchlistMoviesQueryKey(favList?.id ?? 0) },
   });
 
   const handleCreate = () => {

@@ -96,9 +96,12 @@ router.get("/movies/genre/:genreId", async (req, res): Promise<void> => {
   if (rawSort === "imdb.desc") {
     // Fetch 3 pages of highly-voted movies for a quality pool, enrich all, sort by IMDb
     // vote_count.gte=500 ensures OMDb has data for all results (avoids null imdbRating)
-    const pages = await Promise.all(
+    // allSettled so a single TMDB 504 on one page doesn't fail the whole request
+    const settled = await Promise.allSettled(
       [1, 2, 3].map(p => getMoviesByGenre(genreId, p, "vote_average.desc", runtimeFilter, 500))
     );
+    const pages = settled.flatMap(r => r.status === "fulfilled" ? [r.value] : []);
+    if (pages.length === 0) { res.status(502).json({ error: "TMDB unavailable" }); return; }
     const seen = new Set<number>();
     const merged = pages.flatMap(d => d.results).filter(m => {
       if (seen.has(m.tmdbId)) return false;
