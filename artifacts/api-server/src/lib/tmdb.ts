@@ -211,7 +211,7 @@ export async function getMoviesByGenre(
     sort_by: sortBy,
   };
   if (runtimeFilter === "movie") params["with_runtime.gte"] = 60;
-  if (runtimeFilter === "short") params["with_runtime.lte"] = 59;
+  if (runtimeFilter === "short") { params["with_runtime.gte"] = 1; params["with_runtime.lte"] = 59; }
   if (voteCountGte != null) params["vote_count.gte"] = voteCountGte;
 
   const data = await tmdbFetch("/discover/movie", params);
