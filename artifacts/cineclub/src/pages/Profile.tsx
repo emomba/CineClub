@@ -5,9 +5,11 @@ import {
   useGetWatchlistMovies, useRemoveMovieFromWatchlist, useCreateWatchlist, getGetWatchlistMoviesQueryKey,
 } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Settings, Save, Film, ListVideo, Pencil, Trash2, Check, X as XIcon, Heart, Plus, Search } from "lucide-react";
+import { User, Settings, Save, Film, ListVideo, Pencil, Trash2, Check, X as XIcon, Heart, Plus, Search, Lock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useUser } from "@clerk/react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -259,8 +261,12 @@ export default function Profile() {
     enabled: !!user?.username,
   });
 
+  const { user: clerkUser } = useUser();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ displayName: "", username: "", bio: "", avatarUrl: "" });
+  const [isPwOpen, setIsPwOpen] = useState(false);
+  const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
+  const [pwLoading, setPwLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -272,6 +278,23 @@ export default function Profile() {
       });
     }
   }, [user]);
+
+  const handlePasswordChange = async () => {
+    if (pwForm.next.length < 8) { toast.error(t("passwordTooShort")); return; }
+    if (pwForm.next !== pwForm.confirm) { toast.error(t("passwordMismatch")); return; }
+    if (!clerkUser) return;
+    setPwLoading(true);
+    try {
+      await clerkUser.updatePassword({ currentPassword: pwForm.current, newPassword: pwForm.next });
+      toast.success(t("passwordChanged"));
+      setIsPwOpen(false);
+      setPwForm({ current: "", next: "", confirm: "" });
+    } catch (err: any) {
+      toast.error(err?.errors?.[0]?.message || t("errorOccurred"));
+    } finally {
+      setPwLoading(false);
+    }
+  };
 
   const handleSave = () => {
     updateMe.mutate({ data: formData }, {
@@ -302,7 +325,7 @@ export default function Profile() {
       </div>
 
       <div className="bg-[#111] border border-gray-800 rounded-3xl p-8 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4">
+        <div className="absolute top-0 right-0 p-4 flex flex-col gap-2 items-end">
           <Button
             variant="outline"
             size="sm"
@@ -316,6 +339,59 @@ export default function Profile() {
               <><Settings size={16} className="mr-2" />{t("editProfile")}</>
             )}
           </Button>
+
+          <Dialog open={isPwOpen} onOpenChange={open => { setIsPwOpen(open); if (!open) setPwForm({ current: "", next: "", confirm: "" }); }}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="border-gray-700 bg-black/50 backdrop-blur-md text-white hover:bg-gray-800">
+                <Lock size={16} className="mr-2" />{t("changePassword")}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-[#111] border-gray-800 text-white sm:max-w-sm">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-bold">{t("changePassword")}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
+                <div>
+                  <label className="text-sm text-gray-400 mb-1 block">{t("currentPassword")}</label>
+                  <Input
+                    type="password"
+                    value={pwForm.current}
+                    onChange={e => setPwForm(f => ({ ...f, current: e.target.value }))}
+                    className="bg-black border-gray-800 focus-visible:ring-amber-500"
+                    autoComplete="current-password"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400 mb-1 block">{t("newPassword")}</label>
+                  <Input
+                    type="password"
+                    value={pwForm.next}
+                    onChange={e => setPwForm(f => ({ ...f, next: e.target.value }))}
+                    className="bg-black border-gray-800 focus-visible:ring-amber-500"
+                    autoComplete="new-password"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400 mb-1 block">{t("confirmNewPassword")}</label>
+                  <Input
+                    type="password"
+                    value={pwForm.confirm}
+                    onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
+                    className="bg-black border-gray-800 focus-visible:ring-amber-500"
+                    autoComplete="new-password"
+                  />
+                </div>
+                <Button
+                  onClick={handlePasswordChange}
+                  disabled={pwLoading || !pwForm.current || !pwForm.next || !pwForm.confirm}
+                  className="w-full bg-amber-600 hover:bg-amber-500 text-black font-bold disabled:opacity-50"
+                >
+                  <Lock size={16} className="mr-2" />
+                  {pwLoading ? t("saving") : t("changePassword")}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="flex flex-col md:flex-row gap-8 items-start">
