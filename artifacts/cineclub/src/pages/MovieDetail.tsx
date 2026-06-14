@@ -259,7 +259,7 @@ export default function MovieDetail() {
   return (
     <PageTransition className="relative pb-20">
       {/* Backdrop — absolute is relative to this PageTransition (which is now `relative`) */}
-      <div className="absolute top-0 left-0 right-0 h-[55vh] z-0 overflow-hidden pointer-events-none">
+      <div className="absolute -top-4 md:-top-8 -left-4 md:-left-8 -right-4 md:-right-8 h-[55vh] z-0 overflow-hidden pointer-events-none">
         {backdropUrl && (
           <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-25"
             style={{ backgroundImage: `url(${backdropUrl})` }} />
