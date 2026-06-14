@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, and, or, sql } from "drizzle-orm";
 import { db, friendshipsTable, usersTable, reviewsTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { buildUserProfile, getOrCreateUser } from "./users";
+import { buildUserProfile } from "./users";
 import { notificationsTable } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -86,12 +86,14 @@ router.post("/friends/request", requireAuth, async (req, res): Promise<void> => 
     .returning();
 
   // Create notification for receiver
-  const senderUser = await getOrCreateUser(clerkId);
-  await db.insert(notificationsTable).values({
-    userId: targetUser.clerkId,
-    type: "friend_request",
-    data: JSON.stringify({ friendshipId: created.id, fromUsername: senderUser.username, fromDisplayName: senderUser.displayName }),
-  });
+  const [senderUser] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId));
+  if (senderUser) {
+    await db.insert(notificationsTable).values({
+      userId: targetUser.clerkId,
+      type: "friend_request",
+      data: JSON.stringify({ friendshipId: created.id, fromUsername: senderUser.username, fromDisplayName: senderUser.displayName }),
+    });
+  }
 
   const result = await getFriendshipWithUser(created, clerkId);
   res.status(201).json(result);
@@ -114,12 +116,14 @@ router.patch("/friends/:id/accept", requireAuth, async (req, res): Promise<void>
   }
 
   // Notify the original requester that their request was accepted
-  const accepter = await getOrCreateUser(clerkId);
-  await db.insert(notificationsTable).values({
-    userId: updated.requesterId,
-    type: "friend_accept",
-    data: JSON.stringify({ friendshipId: updated.id, fromUsername: accepter.username, fromDisplayName: accepter.displayName }),
-  });
+  const [accepter] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId));
+  if (accepter) {
+    await db.insert(notificationsTable).values({
+      userId: updated.requesterId,
+      type: "friend_accept",
+      data: JSON.stringify({ friendshipId: updated.id, fromUsername: accepter.username, fromDisplayName: accepter.displayName }),
+    });
+  }
 
   const result = await getFriendshipWithUser(updated, clerkId);
   res.json(result);

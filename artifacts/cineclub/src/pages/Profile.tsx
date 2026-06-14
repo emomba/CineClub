@@ -9,7 +9,7 @@ import { User, Settings, Save, Film, ListVideo, Pencil, Trash2, Check, X as XIco
 import { useState, useEffect } from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useUser } from "@clerk/react";
+import { getAuthToken } from "@/lib/auth";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -261,7 +261,6 @@ export default function Profile() {
     enabled: !!user?.username,
   });
 
-  const { user: clerkUser } = useUser();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ displayName: "", username: "", bio: "", avatarUrl: "" });
   const [isPwOpen, setIsPwOpen] = useState(false);
@@ -282,15 +281,26 @@ export default function Profile() {
   const handlePasswordChange = async () => {
     if (pwForm.next.length < 8) { toast.error(t("passwordTooShort")); return; }
     if (pwForm.next !== pwForm.confirm) { toast.error(t("passwordMismatch")); return; }
-    if (!clerkUser) return;
     setPwLoading(true);
     try {
-      await clerkUser.updatePassword({ currentPassword: pwForm.current, newPassword: pwForm.next });
+      const token = getAuthToken();
+      const res = await fetch("/api/auth/password", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ currentPassword: pwForm.current, newPassword: pwForm.next }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || t("errorOccurred"));
+      }
       toast.success(t("passwordChanged"));
       setIsPwOpen(false);
       setPwForm({ current: "", next: "", confirm: "" });
     } catch (err: any) {
-      toast.error(err?.errors?.[0]?.message || t("errorOccurred"));
+      toast.error(err.message || t("errorOccurred"));
     } finally {
       setPwLoading(false);
     }

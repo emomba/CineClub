@@ -5,23 +5,6 @@ import { requireAuth, getClerkUserId } from "../lib/auth";
 
 const router: IRouter = Router();
 
-async function getOrCreateUser(clerkId: string) {
-  const [existing] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId));
-  if (existing) return existing;
-  // Create with default username from clerkId
-  const username = `user_${clerkId.slice(-8)}`;
-  const [created] = await db
-    .insert(usersTable)
-    .values({ clerkId, username, displayName: username })
-    .returning();
-  // Create default watchlists
-  await db.insert(watchlistsTable).values([
-    { userId: clerkId, name: "İzledim", isDefault: 1 },
-    { userId: clerkId, name: "İzleyeceğim", isDefault: 1 },
-  ]);
-  return created;
-}
-
 async function buildUserProfile(user: typeof usersTable.$inferSelect) {
   const [watchedCount, reviewCount, friendCount] = await Promise.all([
     db
@@ -58,14 +41,16 @@ async function buildUserProfile(user: typeof usersTable.$inferSelect) {
 
 router.get("/users/me", requireAuth, async (req, res): Promise<void> => {
   const clerkId = getClerkUserId(req);
-  const user = await getOrCreateUser(clerkId);
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId));
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
   const profile = await buildUserProfile(user);
   res.json(profile);
 });
 
 router.patch("/users/me", requireAuth, async (req, res): Promise<void> => {
   const clerkId = getClerkUserId(req);
-  const user = await getOrCreateUser(clerkId);
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId));
+  if (!user) { res.status(404).json({ error: "User not found" }); return; }
   const { displayName, username, avatarUrl, bio } = req.body;
 
   if (username && username !== user.username) {
@@ -172,5 +157,5 @@ router.get("/users/:username/overlap", requireAuth, async (req, res): Promise<vo
   res.json({ commonWatched });
 });
 
-export { getOrCreateUser, buildUserProfile };
+export { buildUserProfile };
 export default router;

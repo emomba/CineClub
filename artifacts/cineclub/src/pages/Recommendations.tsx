@@ -9,7 +9,7 @@ import { getPosterUrl } from "@/lib/tmdb";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useLang } from "@/lib/i18n";
-import { useAuth } from "@clerk/react";
+import { getAuthToken } from "@/lib/auth";
 
 type SentRec = {
   id: number;
@@ -25,7 +25,6 @@ type SentRec = {
 export default function Recommendations() {
   const { t } = useLang();
   const [tab, setTab] = useState<"received" | "sent">("received");
-  const { getToken } = useAuth();
 
   const { data: recs, isLoading } = useGetRecommendationInbox();
   const markRead = useMarkRecommendationRead();
@@ -34,7 +33,7 @@ export default function Recommendations() {
   const { data: sent, isLoading: loadingSent } = useQuery<SentRec[]>({
     queryKey: ["recommendations", "sent"],
     queryFn: async () => {
-      const token = await getToken();
+      const token = getAuthToken();
       const res = await fetch("/api/recommendations/sent", {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });

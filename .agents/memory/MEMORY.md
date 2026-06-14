@@ -1,2 +1,2 @@
-- [Clerk version compatibility](clerk-version-compatibility.md) — @clerk/react@6.x + @clerk/shared@4.x is the only working combo; 5.x/3.x pairing breaks at runtime.
+- [Auth system — custom JWT](auth-custom-jwt.md) — Clerk fully replaced; custom username+password auth with bcryptjs+jsonwebtoken; token in localStorage; `getAuthToken()` helper for direct fetch calls.
 - [OMDb rate limiting](omdb-rate-limiting.md) — free plan = 1000 req/day; circuit breaker in fetchImdbRating pauses calls 60 min after "Request limit reached!"; sortByImdbRating skips sort when all imdbRatings are null.

@@ -6,7 +6,7 @@ import { User, Film, Star, MessageSquare, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import { useLang } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@clerk/react";
+import { getAuthToken } from "@/lib/auth";
 import { getPosterUrl } from "@/lib/tmdb";
 
 type WatchedMovie = {
@@ -45,7 +45,6 @@ function WatchedScroll({ movies, label }: { movies: WatchedMovie[]; label: strin
 export default function FriendProfile() {
   const { t } = useLang();
   const { userId: username } = useParams<{ userId: string }>();
-  const { getToken } = useAuth();
 
   const { data: user, isLoading: loadingUser } = useGetUserByUsername(username, {
     query: { enabled: !!username, queryKey: getGetUserByUsernameQueryKey(username) },
@@ -68,7 +67,7 @@ export default function FriendProfile() {
   const { data: overlap } = useQuery<{ commonWatched: WatchedMovie[] }>({
     queryKey: ["overlap", username],
     queryFn: async () => {
-      const token = await getToken();
+      const token = getAuthToken();
       const res = await fetch(`/api/users/${username}/overlap`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });

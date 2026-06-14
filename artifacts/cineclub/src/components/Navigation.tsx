@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Home, Search, ListVideo, Users, Bell, MessageSquare, Dices, LogOut, ChevronDown, User } from "lucide-react";
-import { useClerk } from "@clerk/react";
+import { useAuth } from "@/lib/auth";
 import { useGetNotifications, useGetRecommendationInbox, useGetMe } from "@workspace/api-client-react";
 import { useLang, LANGS } from "@/lib/i18n";
 
 export function Sidebar() {
   const [location] = useLocation();
-  const { signOut } = useClerk();
+  const { signOut } = useAuth();
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
   const { t, lang, setLang } = useLang();
   const [langOpen, setLangOpen] = useState(false);
@@ -146,7 +146,7 @@ export function Sidebar() {
 
       <div className="p-3 border-t border-[#1a1a1a]">
         <button
-          onClick={() => signOut({ redirectUrl: basePath || "/" })}
+          onClick={() => { signOut(); window.location.href = basePath || "/"; }}
           className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-gray-400 hover:bg-white/5 hover:text-red-400 transition-all"
         >
           <LogOut size={20} />

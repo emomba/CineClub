@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { db, recommendationsTable, usersTable, notificationsTable } from "@workspace/db";
 import { requireAuth, getClerkUserId } from "../lib/auth";
-import { buildUserProfile, getOrCreateUser } from "./users";
+import { buildUserProfile } from "./users";
 
 const router: IRouter = Router();
 
@@ -30,8 +30,8 @@ router.post("/recommendations", requireAuth, async (req, res): Promise<void> => 
     .returning();
 
   // Notify recipient
-  const sender = await getOrCreateUser(clerkId);
-  await db.insert(notificationsTable).values({
+  const [sender] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId));
+  if (sender) await db.insert(notificationsTable).values({
     userId: toUserId,
     type: "recommendation",
     data: JSON.stringify({
