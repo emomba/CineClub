@@ -63,7 +63,7 @@ export function Sidebar() {
       {/* Logo + lang */}
       <div className="p-5 flex items-center justify-between border-b border-[#1a1a1a]">
         <div className="flex items-center gap-3">
-          <img src={`${basePath}/logo.svg`} alt="CineClub" className="w-8 h-8" />
+          <img src={`${basePath}/logo.svg`} alt="CineClub" className="w-10 h-10" />
           <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-amber-500 to-red-500 bg-clip-text text-transparent">CineClub</span>
         </div>
 

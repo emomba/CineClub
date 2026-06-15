@@ -43,7 +43,7 @@ export default function Login() {
     <div className="min-h-[100dvh] flex items-center justify-center bg-[#050505] px-4">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8 gap-3">
-          <img src="/logo.svg" alt="CineClub" className="w-16 h-16" />
+          <img src="/logo.svg" alt="CineClub" className="w-20 h-20" />
           <h1 className="text-3xl font-black text-white tracking-tight">CineClub</h1>
           <p className="text-gray-400 text-sm">{t("loginSubtitle") || "Hesabına giriş yap"}</p>
         </div>

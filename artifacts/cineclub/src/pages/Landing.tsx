@@ -129,7 +129,7 @@ export default function Landing() {
       {/* Center content */}
       <div className="z-10 text-center max-w-3xl px-6">
         <div className="mb-8 flex justify-center">
-          <img src={`${basePath}/logo.svg`} alt="CineClub Logo" className="w-24 h-24" />
+          <img src={`${basePath}/logo.svg`} alt="CineClub Logo" className="w-28 h-28" />
         </div>
 
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6">
