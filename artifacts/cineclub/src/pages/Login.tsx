@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Film, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -6,14 +6,24 @@ import { useLang } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { getAndClearLoginHint } from "@/lib/auth-token";
 
 export default function Login() {
-  const { signIn } = useAuth();
+  const { signIn, isLoaded, isSignedIn } = useAuth();
   const [, setLocation] = useLocation();
   const { t } = useLang();
   const [form, setForm] = useState({ username: "", password: "" });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const hint = getAndClearLoginHint();
+    if (hint) setForm(f => ({ ...f, username: hint }));
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) setLocation("/home");
+  }, [isLoaded, isSignedIn]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,6 +104,12 @@ export default function Login() {
             className="text-amber-400 hover:text-amber-300 font-medium"
           >
             {t("register") || "Kayıt Ol"}
+          </button>
+        </p>
+
+        <p className="text-center mt-2 text-gray-600 text-sm">
+          <button onClick={() => setLocation("/")} className="hover:text-gray-400 transition-colors">
+            ← Geri Dön
           </button>
         </p>
       </div>

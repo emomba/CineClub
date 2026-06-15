@@ -1,19 +1,26 @@
-import { Link } from "wouter";
 import { useLang, LANGS } from "@/lib/i18n";
 import { useState, useRef, useEffect } from "react";
-import { Globe } from "lucide-react";
+import { useLocation } from "wouter";
+import { Globe, ChevronDown, LogIn, UserPlus } from "lucide-react";
+import { getSavedAccounts, setLoginHint, type SavedAccount } from "@/lib/auth-token";
 
 export default function Landing() {
   const { t, lang, setLang } = useLang();
+  const [, setLocation] = useLocation();
   const [langOpen, setLangOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
+  const accountRef = useRef<HTMLDivElement>(null);
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+  const savedAccounts = getSavedAccounts();
+  const [selected, setSelected] = useState<SavedAccount | null>(savedAccounts[0] ?? null);
+  const hasSaved = savedAccounts.length > 0;
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (langRef.current && !langRef.current.contains(e.target as Node)) {
-        setLangOpen(false);
-      }
+      if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) setAccountOpen(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -21,11 +28,79 @@ export default function Landing() {
 
   const currentLang = LANGS.find(l => l.code === lang) ?? LANGS[0];
 
+  const enterClub = () => {
+    if (selected) setLoginHint(selected.username);
+    setLocation("/login");
+  };
+
+  const Avatar = ({ acc, size = "md" }: { acc: SavedAccount; size?: "sm" | "md" }) => {
+    const cls = size === "sm" ? "w-6 h-6 text-[10px]" : "w-8 h-8 text-xs";
+    return acc.avatarUrl ? (
+      <img src={acc.avatarUrl} alt={acc.displayName} className={`${cls} rounded-full object-cover`} />
+    ) : (
+      <div className={`${cls} rounded-full bg-gradient-to-br from-amber-500 to-red-600 flex items-center justify-center text-black font-bold`}>
+        {acc.displayName[0].toUpperCase()}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-[100dvh] bg-[#050505] text-white flex flex-col items-center justify-center overflow-hidden relative">
-      <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-[#050505] to-[#050505] opacity-50"></div>
+      <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-[#050505] to-[#050505] opacity-50" />
 
-      {/* Language selector - top right */}
+      {/* Saved account — top left */}
+      {hasSaved && selected && (
+        <div className="absolute top-5 left-6 z-20" ref={accountRef}>
+          <button
+            onClick={() => setAccountOpen(v => !v)}
+            className="flex items-center gap-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-500/30 px-3 py-2 rounded-xl transition-all"
+          >
+            <Avatar acc={selected} />
+            <div className="text-left">
+              <div className="text-sm font-medium text-white leading-none">{selected.displayName}</div>
+              <div className="text-xs text-gray-500 leading-none mt-0.5">@{selected.username}</div>
+            </div>
+            <ChevronDown size={14} className={`text-gray-400 transition-transform ml-1 ${accountOpen ? "rotate-180" : ""}`} />
+          </button>
+
+          {accountOpen && (
+            <div className="absolute left-0 top-full mt-2 w-60 bg-[#111] border border-gray-800 rounded-xl shadow-2xl overflow-hidden z-50">
+              {savedAccounts.map(acc => (
+                <button
+                  key={acc.id}
+                  onClick={() => { setSelected(acc); setAccountOpen(false); }}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${selected.id === acc.id ? "bg-white/10 text-white" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}
+                >
+                  <Avatar acc={acc} size="sm" />
+                  <div className="text-left">
+                    <div className="font-medium text-white text-xs">{acc.displayName}</div>
+                    <div className="text-gray-500 text-[11px]">@{acc.username}</div>
+                  </div>
+                  {selected.id === acc.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-500" />}
+                </button>
+              ))}
+              <div className="border-t border-gray-800">
+                <button
+                  onClick={() => { setAccountOpen(false); setLocation("/login"); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-400 hover:bg-white/5 hover:text-white transition-colors"
+                >
+                  <LogIn size={13} />
+                  <span>Farklı hesapla giriş yap</span>
+                </button>
+                <button
+                  onClick={() => { setAccountOpen(false); setLocation("/register"); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-400 hover:bg-white/5 hover:text-white transition-colors"
+                >
+                  <UserPlus size={13} />
+                  <span>Yeni hesap oluştur</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Language — top right */}
       <div className="absolute top-5 right-6 z-20" ref={langRef}>
         <button
           onClick={() => setLangOpen(v => !v)}
@@ -51,6 +126,7 @@ export default function Landing() {
         )}
       </div>
 
+      {/* Center content */}
       <div className="z-10 text-center max-w-3xl px-6">
         <div className="mb-8 flex justify-center">
           <img src={`${basePath}/logo.svg`} alt="CineClub Logo" className="w-24 h-24" />
@@ -74,14 +150,51 @@ export default function Landing() {
           {t("heroSubtitle")}
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <Link href="/sign-up" className="bg-gradient-to-r from-amber-500 to-red-500 hover:from-amber-400 hover:to-red-400 text-black font-semibold px-8 py-4 rounded-xl text-lg transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)]">
-            {t("startClub")}
-          </Link>
-          <Link href="/sign-in" className="text-white hover:text-amber-400 font-medium px-8 py-4 rounded-xl text-lg border border-white/10 hover:border-amber-500/30 transition-all bg-white/5 backdrop-blur-sm">
-            {t("signIn")}
-          </Link>
-        </div>
+        {hasSaved ? (
+          /* Single button — saved account exists */
+          <button
+            onClick={enterClub}
+            className="relative group px-12 py-4 rounded-2xl text-lg font-bold text-black transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
+            style={{
+              background: "linear-gradient(135deg, rgba(245,158,11,0.9) 0%, rgba(239,68,68,0.9) 100%)",
+              boxShadow: "0 4px 24px rgba(245,158,11,0.25), 0 1px 0 rgba(255,255,255,0.1) inset",
+            }}
+          >
+            <span className="relative z-10">
+              {lang === "tr" ? "Kulübe Gir" : lang === "de" ? "Club betreten" : lang === "es" ? "Entrar al club" : lang === "fr" ? "Entrer au club" : "Enter the Club"}
+            </span>
+            <div className="absolute inset-0 rounded-2xl bg-white/0 group-hover:bg-white/10 transition-all duration-200" />
+          </button>
+        ) : (
+          /* Two buttons — no saved account */
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <button
+              onClick={() => setLocation("/register")}
+              className="relative group px-9 py-4 rounded-2xl text-base font-bold text-black transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
+              style={{
+                background: "linear-gradient(135deg, rgba(245,158,11,0.9) 0%, rgba(239,68,68,0.9) 100%)",
+                boxShadow: "0 4px 24px rgba(245,158,11,0.25), 0 1px 0 rgba(255,255,255,0.1) inset",
+              }}
+            >
+              <span className="relative z-10">{t("startClub") || "Kayıt Ol"}</span>
+              <div className="absolute inset-0 rounded-2xl bg-white/0 group-hover:bg-white/10 transition-all duration-200" />
+            </button>
+
+            <button
+              onClick={() => setLocation("/login")}
+              className="relative group px-9 py-4 rounded-2xl text-base font-bold transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
+              style={{
+                background: "linear-gradient(135deg, rgba(245,158,11,0.22) 0%, rgba(220,38,38,0.22) 100%)",
+                border: "1.5px solid rgba(245,158,11,0.45)",
+                color: "rgb(252,211,77)",
+                boxShadow: "0 4px 20px rgba(245,158,11,0.15), inset 0 1px 0 rgba(255,255,255,0.06)",
+              }}
+            >
+              <span className="relative z-10">{t("signIn") || "Giriş Yap"}</span>
+              <div className="absolute inset-0 rounded-2xl bg-white/0 group-hover:bg-amber-500/10 transition-all duration-200" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

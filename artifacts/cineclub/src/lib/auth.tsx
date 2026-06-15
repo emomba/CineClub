@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
-import { getAuthToken } from "./auth-token";
+import { getAuthToken, saveAccount } from "./auth-token";
 
 export interface AuthUser {
   id: string;
@@ -79,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { token, user: u } = await res.json();
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(u));
+    saveAccount({ id: u.id, username: u.username, displayName: u.displayName, avatarUrl: u.avatarUrl });
     flushSync(() => setUser(u));
   }, []);
 
@@ -95,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { token, user: u } = await res.json();
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(u));
+    saveAccount({ id: u.id, username: u.username, displayName: u.displayName, avatarUrl: u.avatarUrl });
     flushSync(() => setUser(u));
   }, []);
 
