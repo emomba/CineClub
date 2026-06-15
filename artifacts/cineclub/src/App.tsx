@@ -1,7 +1,7 @@
 import { Switch, Route, Redirect, Router as WouterRouter, useLocation } from "wouter";
 import { LangProvider } from "@/lib/i18n";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { useEffect, useRef } from "react";
@@ -107,7 +107,7 @@ function App() {
             </AuthProvider>
           </QueryClientProvider>
         </WouterRouter>
-        <Toaster />
+        <Toaster theme="dark" richColors position="top-center" />
       </TooltipProvider>
     </LangProvider>
   );
