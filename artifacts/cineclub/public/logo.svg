@@ -4,47 +4,47 @@
       <stop offset="0%" stop-color="#f59e0b"/>
       <stop offset="100%" stop-color="#ef4444"/>
     </linearGradient>
+    <linearGradient id="gs" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#ef4444" stop-opacity="0.55"/>
+    </linearGradient>
     <clipPath id="lobar">
-      <rect x="12" y="30" width="76" height="16" rx="5"/>
-    </clipPath>
-    <clipPath id="hibar">
-      <rect x="12" y="12" width="76" height="16" rx="5"/>
+      <rect x="12" y="44" width="76" height="13"/>
     </clipPath>
   </defs>
 
   <!-- ── Board body ── -->
-  <rect x="12" y="44" width="76" height="48" rx="7" fill="#111"/>
-  <rect x="12" y="44" width="76" height="48" rx="7" fill="none"
-        stroke="url(#g)" stroke-width="1.8" opacity="0.7"/>
+  <rect x="12" y="56" width="76" height="38" rx="7" fill="#111"/>
+  <rect x="12" y="56" width="76" height="38" rx="7"
+        fill="none" stroke="url(#g)" stroke-width="1.8" opacity="0.65"/>
 
-  <!-- Board content lines -->
-  <rect x="22" y="57" width="42" height="3" rx="1.5" fill="url(#g)" opacity="0.7"/>
-  <rect x="22" y="67" width="30" height="3" rx="1.5" fill="url(#g)" opacity="0.45"/>
-  <rect x="22" y="77" width="36" height="3" rx="1.5" fill="url(#g)" opacity="0.45"/>
+  <!-- Board lines -->
+  <rect x="22" y="68" width="42" height="3"   rx="1.5" fill="url(#gs)"/>
+  <rect x="22" y="77" width="30" height="3"   rx="1.5" fill="url(#gs)" opacity="0.6"/>
+  <rect x="22" y="86" width="36" height="2.5" rx="1.2" fill="url(#gs)" opacity="0.6"/>
 
-  <!-- ── Lower clapper bar (fixed) ── -->
-  <rect x="12" y="30" width="76" height="16" rx="5" fill="url(#g)"/>
-  <!-- diagonal stripes -->
+  <!-- ── Lower clapper bar (fixed to board) ── -->
+  <rect x="12" y="44" width="76" height="13" rx="4" fill="url(#g)"/>
+  <!-- Diagonal stripes -->
   <g clip-path="url(#lobar)">
-    <polygon points="22,30 32,30 17,46 7,46"  fill="#050505" opacity="0.38"/>
-    <polygon points="42,30 52,30 37,46 27,46"  fill="#050505" opacity="0.38"/>
-    <polygon points="62,30 72,30 57,46 47,46"  fill="#050505" opacity="0.38"/>
-    <polygon points="82,30 92,30 77,46 67,46"  fill="#050505" opacity="0.38"/>
+    <polygon points="22,44 31,44 18,57  9,57" fill="#050505" opacity="0.38"/>
+    <polygon points="41,44 50,44 37,57 28,57" fill="#050505" opacity="0.38"/>
+    <polygon points="60,44 69,44 56,57 47,57" fill="#050505" opacity="0.38"/>
+    <polygon points="79,44 88,44 75,57 66,57" fill="#050505" opacity="0.38"/>
   </g>
 
-  <!-- ── Upper clapper arm (open ~25°) ── -->
-  <g transform="rotate(-25 12 30)">
-    <rect x="12" y="12" width="76" height="16" rx="5" fill="url(#g)"/>
-    <!-- diagonal stripes on upper arm -->
-    <g clip-path="url(#hibar)">
-      <polygon points="22,12 32,12 17,28 7,28"  fill="#050505" opacity="0.38"/>
-      <polygon points="42,12 52,12 37,28 27,28"  fill="#050505" opacity="0.38"/>
-      <polygon points="62,12 72,12 57,28 47,28"  fill="#050505" opacity="0.38"/>
-      <polygon points="82,12 92,12 77,28 67,28"  fill="#050505" opacity="0.38"/>
-    </g>
+  <!-- ── Upper clapper arm (open ~20°, pivot at hinge) ── -->
+  <!-- Pivoting from (13, 44) at -20° — top-right stays within viewBox -->
+  <g transform="rotate(-20 13 44)">
+    <rect x="12" y="30" width="76" height="13" rx="4" fill="url(#g)"/>
+    <!-- Stripes on upper arm (same local coords) -->
+    <polygon points="22,30 31,30 18,43  9,43" fill="#050505" opacity="0.38"/>
+    <polygon points="41,30 50,30 37,43 28,43" fill="#050505" opacity="0.38"/>
+    <polygon points="60,30 69,30 56,43 47,43" fill="#050505" opacity="0.38"/>
+    <polygon points="79,30 88,30 75,43 66,43" fill="#050505" opacity="0.38"/>
   </g>
 
-  <!-- Hinge dot -->
-  <circle cx="12" cy="30" r="4" fill="#0a0a0a"/>
-  <circle cx="12" cy="30" r="2"  fill="url(#g)" opacity="0.95"/>
+  <!-- Hinge pin -->
+  <circle cx="13" cy="44" r="4"   fill="#0a0a0a"/>
+  <circle cx="13" cy="44" r="2.2" fill="url(#g)" opacity="0.95"/>
 </svg>
