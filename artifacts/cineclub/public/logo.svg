@@ -1,39 +1,43 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#180a00"/>
-      <stop offset="100%" stop-color="#180005"/>
-    </linearGradient>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="body" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#f59e0b"/>
       <stop offset="100%" stop-color="#ef4444"/>
     </linearGradient>
-    <linearGradient id="gfade" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.55"/>
-      <stop offset="100%" stop-color="#ef4444" stop-opacity="0.55"/>
+    <linearGradient id="lens-ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde68a"/>
+      <stop offset="100%" stop-color="#fca5a5"/>
     </linearGradient>
+    <radialGradient id="lens-glass" cx="38%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#1c1c1c"/>
+      <stop offset="100%" stop-color="#080808"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
   </defs>
 
-  <!-- Background rounded square -->
-  <rect x="4" y="4" width="92" height="92" rx="22" fill="url(#bg)"/>
-  <!-- Subtle gradient border -->
-  <rect x="4" y="4" width="92" height="92" rx="22" fill="none" stroke="url(#gfade)" stroke-width="1.2"/>
+  <!-- Camera body — gradient fill, clean rounded rect -->
+  <rect x="10" y="36" width="80" height="50" rx="11" fill="url(#body)"/>
 
-  <!-- Top film strip divider -->
-  <line x1="4" y1="27" x2="96" y2="27" stroke="url(#gfade)" stroke-width="0.8"/>
-  <!-- Bottom film strip divider -->
-  <line x1="4" y1="73" x2="96" y2="73" stroke="url(#gfade)" stroke-width="0.8"/>
+  <!-- Viewfinder bump — top center-left -->
+  <rect x="30" y="25" width="28" height="14" rx="7" fill="url(#body)"/>
 
-  <!-- Top sprocket holes (3) -->
-  <rect x="17" y="14.5" width="11" height="8" rx="2.5" fill="url(#g)"/>
-  <rect x="44.5" y="14.5" width="11" height="8" rx="2.5" fill="url(#g)"/>
-  <rect x="72" y="14.5" width="11" height="8" rx="2.5" fill="url(#g)"/>
+  <!-- Flash dot — top right, subtle -->
+  <circle cx="73" cy="31" r="5.5" fill="#fbbf24" opacity="0.85"/>
+  <circle cx="73" cy="31" r="2.8" fill="#fff8e7"/>
 
-  <!-- Bottom sprocket holes (3) -->
-  <rect x="17" y="77.5" width="11" height="8" rx="2.5" fill="url(#g)"/>
-  <rect x="44.5" y="77.5" width="11" height="8" rx="2.5" fill="url(#g)"/>
-  <rect x="72" y="77.5" width="11" height="8" rx="2.5" fill="url(#g)"/>
+  <!-- Lens outer ring (light gradient stroke) -->
+  <circle cx="50" cy="62" r="19" fill="none" stroke="url(#lens-ring)" stroke-width="2.5" opacity="0.9" filter="url(#glow)"/>
 
-  <!-- Play triangle — centered, slightly softened -->
-  <polygon points="37,34 37,66 71,50" fill="url(#g)" stroke="url(#g)" stroke-width="0" stroke-linejoin="round"/>
+  <!-- Lens middle ring -->
+  <circle cx="50" cy="62" r="14.5" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.2"/>
+
+  <!-- Lens glass -->
+  <circle cx="50" cy="62" r="13" fill="url(#lens-glass)"/>
+
+  <!-- Lens inner highlight — small glint top-left -->
+  <circle cx="44.5" cy="57" r="3.5" fill="white" opacity="0.14"/>
+  <circle cx="43.5" cy="56" r="1.4" fill="white" opacity="0.35"/>
 </svg>
