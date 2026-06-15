@@ -1,17 +1,14 @@
 import { useLang, LANGS } from "@/lib/i18n";
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Globe, ChevronDown, LogIn, UserPlus, Loader2 } from "lucide-react";
-import { getSavedAccounts, setLoginHint, type SavedAccount } from "@/lib/auth-token";
-import { useAuth } from "@/lib/auth";
+import { Globe, ChevronDown, LogIn, UserPlus } from "lucide-react";
+import { getSavedAccounts, type SavedAccount } from "@/lib/auth-token";
 
 export default function Landing() {
   const { t, lang, setLang } = useLang();
   const [, setLocation] = useLocation();
-  const { restoreSession } = useAuth();
   const [langOpen, setLangOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
-  const [entering, setEntering] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -31,20 +28,8 @@ export default function Landing() {
 
   const currentLang = LANGS.find(l => l.code === lang) ?? LANGS[0];
 
-  const enterClub = async () => {
-    if (!selected) { setLocation("/login"); return; }
-    setEntering(true);
-    try {
-      const ok = await restoreSession(selected);
-      if (ok) {
-        setLocation("/home");
-      } else {
-        setLoginHint(selected.username);
-        setLocation("/login");
-      }
-    } finally {
-      setEntering(false);
-    }
+  const enterClub = () => {
+    setLocation("/home");
   };
 
   const Avatar = ({ acc, size = "md" }: { acc: SavedAccount; size?: "sm" | "md" }) => {
@@ -168,14 +153,12 @@ export default function Landing() {
           /* Single button — saved account exists */
           <button
             onClick={enterClub}
-            disabled={entering}
-            className="relative group px-12 py-4 rounded-2xl text-lg font-bold text-black transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] disabled:opacity-80 disabled:cursor-wait disabled:scale-100 flex items-center justify-center gap-2.5"
+            className="relative group inline-flex items-center justify-center px-12 py-4 rounded-2xl text-lg font-bold text-black transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
             style={{
               background: "linear-gradient(135deg, rgba(245,158,11,0.9) 0%, rgba(239,68,68,0.9) 100%)",
               boxShadow: "0 4px 24px rgba(245,158,11,0.25), 0 1px 0 rgba(255,255,255,0.1) inset",
             }}
           >
-            {entering && <Loader2 size={18} className="animate-spin shrink-0" />}
             <span className="relative z-10">
               {lang === "tr" ? "Kulübe Gir" : lang === "de" ? "Club betreten" : lang === "es" ? "Entrar al club" : lang === "fr" ? "Entrer au club" : "Enter the Club"}
             </span>
