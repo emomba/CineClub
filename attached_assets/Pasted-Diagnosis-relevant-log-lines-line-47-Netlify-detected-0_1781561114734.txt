@@ -1,0 +1,47 @@
+Diagnosis — relevant log lines
+
+line 47 Netlify detected 0 frameworks (so it didn't infer a build).
+line 48 Build failed because the publish directory "artifacts/cineclub/dist" does not exist.
+line 49 No build steps were found (no build command was run).
+line 50 The site build failed as a result.
+Error type and cause
+
+Netlify did not run any build command (no detected framework / no build step configured), so it never produced the expected output folder artifacts/cineclub/dist. The publish directory in your site settings or netlify.toml points to artifacts/cineclub/dist, but that directory is not present after install, so the deploy fails.
+Solution
+
+Verify repo contains the project and a build script
+
+Confirm package.json exists at the correct location (root or a subfolder like cineclub) and that it contains a build script (e.g. "build": "vite build" or "build": "react-scripts build"). If the project lives in a subfolder (likely "cineclub"), make sure you check package.json in that subfolder before changing Netlify settings.
+Decide where Netlify should run the build
+
+If your app is in a subfolder (e.g. cineclub), set the Netlify Base directory to that folder. If the app is at repo root, leave base directory blank.
+In Netlify UI: Site settings → Build & deploy → Continuous Deployment → Build settings → set:
+Base directory: cineclub (only if the project is in that folder)
+Build command: pnpm build (or npm run build / yarn build depending on your package manager)
+Publish directory: dist (or the actual output folder your build produces)
+Alternatively, add or update netlify.toml at repo root. Example for a project in the cineclub subfolder that outputs to dist:
+# netlify.toml
+[build]
+  base = "cineclub"
+  command = "pnpm build"
+  publish = "dist"
+If your build actually generates artifacts/cineclub/dist (uncommon), you can set publish = "artifacts/cineclub/dist" — but prefer making publish relative to the base directory (e.g., base = "" and publish = "artifacts/cineclub/dist").
+Make sure the build command actually creates the publish directory
+
+Locally run (in the directory you configured as base):
+pnpm install
+pnpm build
+Verify a dist (or the configured publish) folder is produced. If not, update your build tool config (vite/webpack/etc.) to output to the expected folder.
+If you use pnpm in Netlify
+
+Netlify supports pnpm; ensure your repo has a pnpm-lock.yaml and that the Build command uses pnpm (pnpm build). Netlify detected pnpm in the logs, so this is likely fine.
+Summary checklist
+
+[ ] Confirm package.json and build script exist (root or subfolder).
+[ ] If project is in a subfolder, set Netlify base directory to that folder.
+[ ] Set Build command to the correct command (pnpm build / npm run build).
+[ ] Set Publish directory to the folder the build actually creates (commonly "dist" or "build").
+[ ] Commit netlify.toml or update Netlify UI settings and trigger a new deploy.
+If you want, share the repo path where package.json lives (root or cineclub/) and I’ll give the exact netlify.toml snippet to add.
+
+Fix with agent

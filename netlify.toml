@@ -1,0 +1,12 @@
+[build]
+  command   = "pnpm run typecheck:libs && BASE_PATH=/ pnpm --filter @workspace/cineclub run build"
+  publish   = "artifacts/cineclub/dist/public"
+
+[build.environment]
+  NODE_VERSION = "20"
+  PNPM_VERSION = "9"
+
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
