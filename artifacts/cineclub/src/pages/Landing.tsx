@@ -170,28 +170,28 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <button
               onClick={() => setLocation("/register")}
-              className="relative group px-9 py-4 rounded-2xl text-base font-bold text-black transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
+              className="relative group px-9 py-4 rounded-2xl text-base font-bold transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
               style={{
-                background: "linear-gradient(135deg, rgba(245,158,11,0.9) 0%, rgba(239,68,68,0.9) 100%)",
-                boxShadow: "0 4px 24px rgba(245,158,11,0.25), 0 1px 0 rgba(255,255,255,0.1) inset",
+                background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+                color: "#0a0500",
+                boxShadow: "0 4px 28px rgba(251,191,36,0.35), inset 0 1px 0 rgba(255,255,255,0.25)",
               }}
             >
-              <span className="relative z-10">{t("startClub") || "Kayıt Ol"}</span>
-              <div className="absolute inset-0 rounded-2xl bg-white/0 group-hover:bg-white/10 transition-all duration-200" />
+              <span className="relative z-10">Kayıt Ol</span>
+              <div className="absolute inset-0 rounded-2xl bg-white/0 group-hover:bg-white/15 transition-all duration-200" />
             </button>
 
             <button
               onClick={() => setLocation("/login")}
-              className="relative group px-9 py-4 rounded-2xl text-base font-bold transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
+              className="relative group px-9 py-4 rounded-2xl text-base font-bold text-white transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
               style={{
-                background: "linear-gradient(135deg, rgba(245,158,11,0.22) 0%, rgba(220,38,38,0.22) 100%)",
-                border: "1.5px solid rgba(245,158,11,0.45)",
-                color: "rgb(252,211,77)",
-                boxShadow: "0 4px 20px rgba(245,158,11,0.15), inset 0 1px 0 rgba(255,255,255,0.06)",
+                background: "linear-gradient(135deg, rgba(239,68,68,0.75) 0%, rgba(185,28,28,0.75) 100%)",
+                border: "1px solid rgba(239,68,68,0.5)",
+                boxShadow: "0 4px 24px rgba(239,68,68,0.2), inset 0 1px 0 rgba(255,255,255,0.08)",
               }}
             >
               <span className="relative z-10">{t("signIn") || "Giriş Yap"}</span>
-              <div className="absolute inset-0 rounded-2xl bg-white/0 group-hover:bg-amber-500/10 transition-all duration-200" />
+              <div className="absolute inset-0 rounded-2xl bg-white/0 group-hover:bg-white/10 transition-all duration-200" />
             </button>
           </div>
         )}

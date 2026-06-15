@@ -1,5 +1,5 @@
 const TOKEN_KEY = "cc_auth_token";
-const SAVED_ACCOUNTS_KEY = "cc_saved_accounts";
+const SAVED_ACCOUNTS_KEY = "cc_saved_accounts_v2";
 const LOGIN_HINT_KEY = "cc_login_hint";
 
 export interface SavedAccount {
