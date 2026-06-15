@@ -58,15 +58,15 @@ export default function Landing() {
 
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6">
           {lang === "tr" ? (
-            <>Özel <span className="bg-gradient-to-r from-amber-500 to-red-500 bg-clip-text text-transparent">sinema</span> lounge'ın.</>
+            <>Özel <span className="bg-gradient-to-r from-amber-500 to-red-500 bg-clip-text text-transparent">sinema</span> kulübün.</>
           ) : lang === "de" ? (
-            <>Deine private <span className="bg-gradient-to-r from-amber-500 to-red-500 bg-clip-text text-transparent">Kino</span>lounge.</>
+            <>Dein privater <span className="bg-gradient-to-r from-amber-500 to-red-500 bg-clip-text text-transparent">Kino</span>klub.</>
           ) : lang === "es" ? (
-            <>Tu salón de <span className="bg-gradient-to-r from-amber-500 to-red-500 bg-clip-text text-transparent">cine</span> privado.</>
+            <>Tu <span className="bg-gradient-to-r from-amber-500 to-red-500 bg-clip-text text-transparent">cine</span>club privado.</>
           ) : lang === "fr" ? (
-            <>Votre salon de <span className="bg-gradient-to-r from-amber-500 to-red-500 bg-clip-text text-transparent">cinéma</span> privé.</>
+            <>Ton <span className="bg-gradient-to-r from-amber-500 to-red-500 bg-clip-text text-transparent">ciné</span>club privé.</>
           ) : (
-            <>Your private <span className="bg-gradient-to-r from-amber-500 to-red-500 bg-clip-text text-transparent">cinema</span> lounge.</>
+            <>Your private <span className="bg-gradient-to-r from-amber-500 to-red-500 bg-clip-text text-transparent">cinema</span> club.</>
           )}
         </h1>
 
