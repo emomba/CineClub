@@ -1,10 +1,11 @@
+import { useEffect, useRef } from "react";
 import { Switch, Route, Redirect, Router as WouterRouter, useLocation } from "wouter";
 import { LangProvider } from "@/lib/i18n";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
-import { useEffect, useRef } from "react";
+import { setBaseUrl } from "@workspace/api-client-react";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import Login from "@/pages/Login";
@@ -21,6 +22,9 @@ import Profile from "@/pages/Profile";
 import Recommendations from "@/pages/Recommendations";
 import Notifications from "@/pages/Notifications";
 import ActorDetail from "@/pages/ActorDetail";
+
+const apiBase = import.meta.env.VITE_API_BASE_URL as string | undefined;
+if (apiBase) setBaseUrl(apiBase);
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");

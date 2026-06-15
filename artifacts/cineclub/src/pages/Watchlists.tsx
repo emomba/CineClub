@@ -113,7 +113,7 @@ function MarkWatchedModal({
       toast.success(t("markedWatched") || "İzledim listesine eklendi!");
       onClose();
     } catch {
-      toast.error(t("genericError") || "Bir hata oluştu");
+      toast.error(t("errorOccurred"));
     } finally {
       setSubmitting(false);
     }

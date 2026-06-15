@@ -1,0 +1,9 @@
+{
+  "buildCommand": "pnpm run typecheck:libs && BASE_PATH=/ pnpm --filter @workspace/cineclub run build",
+  "outputDirectory": "artifacts/cineclub/dist/public",
+  "installCommand": "pnpm install",
+  "framework": null,
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}
