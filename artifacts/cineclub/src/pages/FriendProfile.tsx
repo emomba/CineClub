@@ -6,7 +6,7 @@ import { User, Film, Star, MessageSquare, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import { useLang } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
-import { getAuthToken } from "@/lib/auth";
+import { getAuthToken } from "@/lib/auth-token";
 import { getPosterUrl } from "@/lib/tmdb";
 
 type WatchedMovie = {

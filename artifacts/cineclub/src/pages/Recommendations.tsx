@@ -9,7 +9,7 @@ import { getPosterUrl } from "@/lib/tmdb";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useLang } from "@/lib/i18n";
-import { getAuthToken } from "@/lib/auth";
+import { getAuthToken } from "@/lib/auth-token";
 
 type SentRec = {
   id: number;

@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { flushSync } from "react-dom";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { getAuthToken } from "./auth-token";
 
 export interface AuthUser {
   id: string;
@@ -22,10 +24,6 @@ const TOKEN_KEY = "cc_auth_token";
 const USER_KEY = "cc_auth_user";
 
 const AuthContext = createContext<AuthContextType | null>(null);
-
-export function getAuthToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => {
@@ -81,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { token, user: u } = await res.json();
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(u));
-    setUser(u);
+    flushSync(() => setUser(u));
   }, []);
 
   const signUp = useCallback(async (username: string, password: string, displayName?: string) => {
@@ -97,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { token, user: u } = await res.json();
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(u));
-    setUser(u);
+    flushSync(() => setUser(u));
   }, []);
 
   const signOut = useCallback(() => {

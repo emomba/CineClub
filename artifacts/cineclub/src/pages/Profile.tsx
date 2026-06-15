@@ -9,7 +9,7 @@ import { User, Settings, Save, Film, ListVideo, Pencil, Trash2, Check, X as XIco
 import { useState, useEffect } from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { getAuthToken } from "@/lib/auth";
+import { getAuthToken } from "@/lib/auth-token";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
