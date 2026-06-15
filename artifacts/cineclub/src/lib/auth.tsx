@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
-import { getAuthToken, saveAccount, saveTokenForAccount, getTokenForAccount, setAuthToken, setAuthUser, type SavedAccount } from "./auth-token";
+import { getAuthToken, getSavedAccounts, saveAccount, saveTokenForAccount, getTokenForAccount, setAuthToken, setAuthUser, type SavedAccount } from "./auth-token";
 
 export interface AuthUser {
   id: string;
@@ -43,29 +43,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const token = getAuthToken();
-    if (!token) {
-      setIsLoaded(true);
-      return;
-    }
-    fetch("/api/auth/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => {
-        if (!r.ok) throw new Error("invalid token");
-        return r.json();
-      })
-      .then((u: AuthUser) => {
-        setUser(u);
-        localStorage.setItem(USER_KEY, JSON.stringify(u));
-        saveTokenForAccount(u.id, token);
-      })
-      .catch(() => {
+    async function tryRestore() {
+      // 1. Try main token first
+      const mainToken = getAuthToken();
+      if (mainToken) {
+        try {
+          const res = await fetch("/api/auth/me", { headers: { Authorization: `Bearer ${mainToken}` } });
+          if (res.ok) {
+            const u: AuthUser = await res.json();
+            setUser(u);
+            localStorage.setItem(USER_KEY, JSON.stringify(u));
+            saveTokenForAccount(u.id, mainToken);
+            return;
+          }
+        } catch {}
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
-        setUser(null);
-      })
-      .finally(() => setIsLoaded(true));
+      }
+
+      // 2. Main token missing/invalid — try saved accounts' per-account tokens
+      const accounts = getSavedAccounts();
+      for (const account of accounts) {
+        const token = getTokenForAccount(account.id);
+        if (!token) continue;
+        try {
+          const res = await fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } });
+          if (res.ok) {
+            const u: AuthUser = await res.json();
+            setAuthToken(token);
+            setAuthUser(u);
+            setUser(u);
+            saveTokenForAccount(u.id, token);
+            return;
+          }
+        } catch {}
+      }
+
+      setUser(null);
+    }
+
+    tryRestore().finally(() => setIsLoaded(true));
   }, []);
 
   const signIn = useCallback(async (username: string, password: string, rememberMe = true) => {
