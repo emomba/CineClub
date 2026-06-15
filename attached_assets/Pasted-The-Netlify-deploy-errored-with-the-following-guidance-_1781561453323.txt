@@ -1,0 +1,66 @@
+The Netlify deploy errored, with the following guidance provided:
+
+- Relevant log lines:
+  - [line 19](#L19) Installing npm packages using pnpm version 9.15.9
+  - [line 20](#L20) Failed during stage 'Install dependencies': dependency_installation script returned non-zero exit code: 1
+  - [line 22](#L22)  ERR_PNPM_LOCKFILE_CONFIG_MISMATCH  Cannot proceed with the frozen installation. The current "overrides" configuration doesn't m
+  - [line 23](#L23) Update your lockfile using "pnpm install --no-frozen-lockfile"
+  - [line 25](#L25) Failing build: Failed to install dependencies
+
+Diagnosis
+- pnpm is aborting the install because the repository's pnpm-lock.yaml doesn't match the current overrides configuration in package.json (pnpm's ERR_PNPM_LOCKFILE_CONFIG_MISMATCH). Netlify runs a frozen install, so the mismatch causes the dependency installation step to fail.
+
+Solution
+1. Verify your overrides in package.json (are they intentional)
+   - Open package.json in the repo to confirm any "overrides" entries are correct: https://github.com/emomba/CineClub/blob/main/package.json
+
+2. Regenerate and commit an updated lockfile (recommended)
+   - On your local machine (repo root), run:
+```bash
+pnpm install --no-frozen-lockfile
+git add pnpm-lock.yaml
+git commit -m "Regenerate pnpm-lock.yaml to match package.json overrides"
+git push
+```
+   - This updates pnpm-lock.yaml so CI can perform a frozen install successfully.
+
+3. Alternative: change the install step in CI (if you cannot commit the lockfile)
+   - In Netlify build settings, run a non-frozen install before the build, e.g. set the install command to:
+```bash
+pnpm install --no-frozen-lockfile
+```
+   - Or prepend that in your custom build command in Netlify (not recommended long-term — better to commit the lockfile).
+
+Notes
+- The logs also show a pnpm version adjustment ([line 17](#L17) / [line 19](#L19)). Make sure you regenerate the lockfile with a pnpm version compatible with your CI (Netlify is using pnpm 9.x here). If you need to change Node versions in Netlify, see: https://docs.netlify.com/configure-builds/manage-dependencies/#node-js-and-javascript
+
+The relevant error logs are:
+
+Line 0: build-image version: ac6eb13fbf000e5c09ad677efd8b7c3c2d0142b6 (noble-new-builds)
+Line 1: buildbot version: a4e69ecd307ba0c352dfef5d0d39913f2dec70dc
+Line 2: Fetching cached dependencies
+Line 3: Failed to fetch cache, continuing with build
+Line 4: Starting to prepare the repo for build
+Line 5: No cached dependencies found. Cloning fresh repo
+Line 6: git clone --filter=blob:none https://github.com/emomba/CineClub
+Line 7: Preparing Git Reference refs/heads/main
+Line 8: Custom publish path detected. Proceeding with the specified path: 'artifacts/cineclub/dist/public'
+Line 9: Custom build command detected. Proceeding with the specified command: 'pnpm run typecheck:libs && BASE_PATH=/ pnpm --filter @wor
+Line 10: Installing dependencies
+Line 11: mise ~/.config/mise/config.toml tools: python@3.14.3
+Line 12: mise ~/.config/mise/config.toml tools: ruby@3.4.8
+Line 13: mise ~/.config/mise/config.toml tools: go@1.26.2
+Line 14: v20.20.2 is already installed.
+Line 15: Now using node v20.20.2 (npm v10.8.2)
+Line 16: Enabling Node.js Corepack
+Line 17: Found pnpm version (10.30.3) that doesn't match expected (9)
+Preparing pnpm@9 for immediate activation...
+Line 18: pnpm workspaces detected
+Line 19: Installing npm packages using pnpm version 9.15.9
+Line 20: Failed during stage 'Install dependencies': dependency_installation script returned non-zero exit code: 1
+Line 21: Scope: all 9 workspace projects
+Line 22:  ERR_PNPM_LOCKFILE_CONFIG_MISMATCH  Cannot proceed with the frozen installation. The current "overrides" configuration doesn't m
+Line 23: Update your lockfile using "pnpm install --no-frozen-lockfile"
+Line 24: Error during pnpm install
+Line 25: Failing build: Failed to install dependencies
+Line 26: Finished processing build request in 6.029s
