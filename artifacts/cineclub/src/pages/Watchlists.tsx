@@ -24,23 +24,54 @@ const TMDB_IMG = "https://image.tmdb.org/t/p/w92";
 
 function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const [hovered, setHovered] = useState(0);
+  const display = hovered || value;
+
   return (
-    <div className="flex gap-1">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          onClick={() => onChange(star)}
-          onMouseEnter={() => setHovered(star)}
-          onMouseLeave={() => setHovered(0)}
-          className="transition-transform hover:scale-110"
-        >
-          <Star
-            size={28}
-            className={`transition-colors ${(hovered || value) >= star ? "fill-amber-400 text-amber-400" : "text-gray-600"}`}
-          />
-        </button>
-      ))}
+    <div className="flex flex-col gap-2">
+      <div
+        className="flex gap-0.5"
+        onMouseLeave={() => setHovered(0)}
+      >
+        {Array.from({ length: 10 }, (_, i) => {
+          const full = i + 1;
+          const half = i + 0.5;
+          const isFull = display >= full;
+          const isHalf = !isFull && display >= half;
+          return (
+            <div key={i} className="relative" style={{ width: 22, height: 22 }}>
+              {/* left half → 0.5 increment */}
+              <div
+                className="absolute left-0 top-0 h-full z-10 cursor-pointer"
+                style={{ width: "50%" }}
+                onMouseEnter={() => setHovered(half)}
+                onClick={() => onChange(half)}
+              />
+              {/* right half → full increment */}
+              <div
+                className="absolute right-0 top-0 h-full z-10 cursor-pointer"
+                style={{ width: "50%" }}
+                onMouseEnter={() => setHovered(full)}
+                onClick={() => onChange(full)}
+              />
+              {/* empty base */}
+              <Star size={22} className="text-gray-700 absolute inset-0" />
+              {/* full fill */}
+              {isFull && <Star size={22} className="fill-amber-400 text-amber-400 absolute inset-0 pointer-events-none" />}
+              {/* half fill */}
+              {isHalf && (
+                <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ width: "50%" }}>
+                  <Star size={22} className="fill-amber-400 text-amber-400" />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {display > 0 && (
+        <span className="text-amber-400 font-bold text-sm">
+          {display % 1 === 0 ? `${display}.0` : display} / 10
+        </span>
+      )}
     </div>
   );
 }
