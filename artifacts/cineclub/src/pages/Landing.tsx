@@ -169,7 +169,7 @@ export default function Landing() {
           <button
             onClick={enterClub}
             disabled={entering}
-            className="relative group px-12 py-4 rounded-2xl text-lg font-bold text-black transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] disabled:opacity-80 disabled:cursor-wait disabled:scale-100 flex items-center gap-2.5"
+            className="relative group px-12 py-4 rounded-2xl text-lg font-bold text-black transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] disabled:opacity-80 disabled:cursor-wait disabled:scale-100 flex items-center justify-center gap-2.5"
             style={{
               background: "linear-gradient(135deg, rgba(245,158,11,0.9) 0%, rgba(239,68,68,0.9) 100%)",
               boxShadow: "0 4px 24px rgba(245,158,11,0.25), 0 1px 0 rgba(255,255,255,0.1) inset",

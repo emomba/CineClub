@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Film, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useLang } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ export default function Login() {
   const { t } = useLang();
   const [form, setForm] = useState({ username: "", password: "" });
   const [showPw, setShowPw] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -30,7 +31,7 @@ export default function Login() {
     if (!form.username || !form.password) return;
     setLoading(true);
     try {
-      await signIn(form.username, form.password);
+      await signIn(form.username, form.password, rememberMe);
       setLocation("/home");
     } catch (err: any) {
       toast.error(err.message || t("loginError"));
@@ -85,6 +86,27 @@ export default function Login() {
               </button>
             </div>
           </div>
+
+          <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="sr-only"
+              />
+              <div className={`w-4 h-4 rounded border transition-all ${rememberMe ? "bg-amber-500 border-amber-500" : "bg-transparent border-gray-600 group-hover:border-gray-400"}`}>
+                {rememberMe && (
+                  <svg viewBox="0 0 12 12" className="w-full h-full p-0.5" fill="none">
+                    <path d="M2 6l3 3 5-5" stroke="black" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+            </div>
+            <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
+              {t("rememberMe") || "Beni hatırla"}
+            </span>
+          </label>
 
           <Button
             type="submit"

@@ -15,7 +15,7 @@ interface AuthContextType {
   user: AuthUser | null;
   isLoaded: boolean;
   isSignedIn: boolean;
-  signIn: (username: string, password: string) => Promise<void>;
+  signIn: (username: string, password: string, rememberMe?: boolean) => Promise<void>;
   signUp: (username: string, password: string, displayName?: string) => Promise<void>;
   signOut: () => void;
   restoreSession: (account: SavedAccount) => Promise<boolean>;
@@ -58,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((u: AuthUser) => {
         setUser(u);
         localStorage.setItem(USER_KEY, JSON.stringify(u));
+        saveTokenForAccount(u.id, token);
       })
       .catch(() => {
         localStorage.removeItem(TOKEN_KEY);
@@ -67,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setIsLoaded(true));
   }, []);
 
-  const signIn = useCallback(async (username: string, password: string) => {
+  const signIn = useCallback(async (username: string, password: string, rememberMe = true) => {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -80,8 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { token, user: u } = await res.json();
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(u));
-    saveAccount({ id: u.id, username: u.username, displayName: u.displayName, avatarUrl: u.avatarUrl });
-    saveTokenForAccount(u.id, token);
+    if (rememberMe) {
+      saveAccount({ id: u.id, username: u.username, displayName: u.displayName, avatarUrl: u.avatarUrl });
+      saveTokenForAccount(u.id, token);
+    }
     flushSync(() => setUser(u));
   }, []);
 
@@ -110,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const restoreSession = useCallback(async (account: SavedAccount): Promise<boolean> => {
-    const token = getTokenForAccount(account.id);
+    const token = getTokenForAccount(account.id) ?? getAuthToken();
     if (!token) return false;
     try {
       const res = await fetch("/api/auth/me", {
@@ -118,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       if (!res.ok) return false;
       const u: AuthUser = await res.json();
+      if (u.id !== account.id) return false;
       setAuthToken(token);
       setAuthUser(u);
       saveTokenForAccount(u.id, token);

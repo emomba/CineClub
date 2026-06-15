@@ -5,9 +5,13 @@ import {
   useGetWatchlists,
   useGetWatchlistMovies,
   useCreateWatchlist,
-  getGetWatchlistMoviesQueryKey
+  useAddMovieToWatchlist,
+  useRemoveMovieFromWatchlist,
+  useUpsertReview,
+  getGetWatchlistMoviesQueryKey,
+  type WatchlistMovie,
 } from "@workspace/api-client-react";
-import { ListVideo, Plus, LayoutGrid, Film } from "lucide-react";
+import { ListVideo, Plus, LayoutGrid, Film, CheckCircle2, Star, X, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -16,18 +20,210 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useLang } from "@/lib/i18n";
 
-function WatchlistSection({ watchlistId, name, isDefault }: { watchlistId: number; name: string; isDefault: boolean }) {
+const TMDB_IMG = "https://image.tmdb.org/t/p/w92";
+
+function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const [hovered, setHovered] = useState(0);
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => onChange(star)}
+          onMouseEnter={() => setHovered(star)}
+          onMouseLeave={() => setHovered(0)}
+          className="transition-transform hover:scale-110"
+        >
+          <Star
+            size={28}
+            className={`transition-colors ${(hovered || value) >= star ? "fill-amber-400 text-amber-400" : "text-gray-600"}`}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function MarkWatchedModal({
+  movie,
+  watchlistId,
+  watchedListId,
+  open,
+  onClose,
+}: {
+  movie: WatchlistMovie;
+  watchlistId: number;
+  watchedListId: number;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const { t } = useLang();
+  const queryClient = useQueryClient();
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const addToWatched = useAddMovieToWatchlist();
+  const removeFromWatchLater = useRemoveMovieFromWatchlist();
+  const upsertReview = useUpsertReview();
+
+  const handleConfirm = async () => {
+    if (!rating) { toast.error(t("ratingRequired") || "Puan seçmelisin"); return; }
+    setSubmitting(true);
+    try {
+      await Promise.all([
+        addToWatched.mutateAsync({ id: watchedListId, data: { tmdbId: movie.tmdbId, title: movie.title, posterPath: movie.posterPath, releaseYear: movie.releaseYear, voteAverage: movie.voteAverage } }),
+        upsertReview.mutateAsync({ data: { tmdbId: movie.tmdbId, movieTitle: movie.title, moviePosterPath: movie.posterPath, rating, content: comment, isSpoiler: false } }),
+      ]);
+      await removeFromWatchLater.mutateAsync({ id: watchlistId, tmdbId: movie.tmdbId });
+      queryClient.invalidateQueries({ queryKey: getGetWatchlistMoviesQueryKey(watchlistId) });
+      queryClient.invalidateQueries({ queryKey: getGetWatchlistMoviesQueryKey(watchedListId) });
+      toast.success(t("markedWatched") || "İzledim listesine eklendi!");
+      onClose();
+    } catch {
+      toast.error(t("genericError") || "Bir hata oluştu");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="bg-[#111] border-gray-800 text-white sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-bold flex items-center gap-2">
+            <CheckCircle2 size={20} className="text-green-400" />
+            {t("markWatched") || "Film İzledim"}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex items-center gap-3 py-2">
+          {movie.posterPath ? (
+            <img src={`${TMDB_IMG}${movie.posterPath}`} alt={movie.title} className="w-12 h-[72px] rounded-lg object-cover shrink-0" />
+          ) : (
+            <div className="w-12 h-[72px] rounded-lg bg-[#222] flex items-center justify-center shrink-0">
+              <Film size={20} className="text-gray-600" />
+            </div>
+          )}
+          <div>
+            <p className="font-bold text-white leading-snug">{movie.title}</p>
+            {movie.releaseYear && <p className="text-sm text-gray-500">{movie.releaseYear}</p>}
+          </div>
+        </div>
+
+        <div className="space-y-4 pt-1">
+          <div>
+            <label className="text-sm font-medium text-gray-400 mb-2 block">
+              {t("yourRating") || "Puanın"} <span className="text-red-400">*</span>
+            </label>
+            <StarRating value={rating} onChange={setRating} />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-400 mb-2 block">
+              {t("comment") || "Yorum"} <span className="text-gray-600 font-normal">({t("optional") || "isteğe bağlı"})</span>
+            </label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder={t("commentPlaceholder") || "Filmle ilgili düşüncelerini yaz..."}
+              rows={3}
+              className="w-full bg-black border border-gray-800 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-none"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="flex-1 border-gray-700 text-gray-400 hover:text-white hover:bg-white/5"
+            >
+              {t("cancel") || "İptal"}
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={!rating || submitting}
+              className="flex-1 bg-gradient-to-r from-green-600 to-emerald-500 text-white font-bold hover:from-green-500 hover:to-emerald-400 disabled:opacity-50"
+            >
+              {submitting ? <Loader2 size={16} className="animate-spin" /> : (t("confirmWatched") || "İzledim!")}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function WatchLaterRow({ movie, watchlistId, watchedListId }: { movie: WatchlistMovie; watchlistId: number; watchedListId: number }) {
+  const [modalOpen, setModalOpen] = useState(false);
+
+  return (
+    <>
+      <div className="flex items-center gap-4 bg-[#0d0d0d] hover:bg-[#111] border border-gray-800/60 hover:border-gray-700/60 rounded-xl px-4 py-3 transition-all group">
+        {movie.posterPath ? (
+          <img src={`${TMDB_IMG}${movie.posterPath}`} alt={movie.title} className="w-10 h-[60px] rounded-lg object-cover shrink-0" />
+        ) : (
+          <div className="w-10 h-[60px] rounded-lg bg-[#222] flex items-center justify-center shrink-0">
+            <Film size={16} className="text-gray-600" />
+          </div>
+        )}
+
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-white text-sm leading-snug truncate">{movie.title}</p>
+          {movie.releaseYear && <p className="text-xs text-gray-500 mt-0.5">{movie.releaseYear}</p>}
+          {movie.voteAverage ? (
+            <div className="flex items-center gap-1 mt-1">
+              <Star size={11} className="fill-amber-400 text-amber-400" />
+              <span className="text-xs text-gray-400">{movie.voteAverage.toFixed(1)}</span>
+            </div>
+          ) : null}
+        </div>
+
+        <button
+          onClick={() => setModalOpen(true)}
+          className="flex items-center gap-1.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 hover:border-green-500/60 text-green-400 hover:text-green-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all shrink-0"
+        >
+          <CheckCircle2 size={13} />
+          <span>İzledim</span>
+        </button>
+      </div>
+
+      <MarkWatchedModal
+        movie={movie}
+        watchlistId={watchlistId}
+        watchedListId={watchedListId}
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+      />
+    </>
+  );
+}
+
+function WatchlistSection({
+  watchlistId,
+  name,
+  isDefault,
+  watchedListId,
+}: {
+  watchlistId: number;
+  name: string;
+  isDefault: boolean;
+  watchedListId?: number;
+}) {
   const { t } = useLang();
   const { data: movies, isLoading } = useGetWatchlistMovies(watchlistId, {
     query: { enabled: !!watchlistId, queryKey: getGetWatchlistMoviesQueryKey(watchlistId) }
   });
 
+  const isWatchLater = name === "İzleyeceğim";
+
   return (
     <div className="mb-12">
       <div className="flex items-center justify-between mb-6 border-b border-gray-800 pb-4">
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${isDefault ? 'bg-amber-500/10 text-amber-500' : 'bg-gray-800/50 text-gray-300'}`}>
-            {name === "Watched" ? <Film size={20} /> : <ListVideo size={20} />}
+          <div className={`p-2 rounded-lg ${isDefault ? "bg-amber-500/10 text-amber-500" : "bg-gray-800/50 text-gray-300"}`}>
+            {name === "İzledim" ? <Film size={20} /> : <ListVideo size={20} />}
           </div>
           <h2 className="text-2xl font-bold tracking-tight">{name}</h2>
           <span className="bg-[#111] text-gray-400 text-xs px-2 py-1 rounded-full border border-gray-800 font-medium">
@@ -37,17 +233,31 @@ function WatchlistSection({ watchlistId, name, isDefault }: { watchlistId: numbe
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {[...Array(6)].map((_, i) => <Skeleton key={i} className="w-full aspect-[2/3] rounded-xl bg-[#111]" />)}
-        </div>
+        isWatchLater ? (
+          <div className="space-y-2">
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-[76px] w-full rounded-xl bg-[#111]" />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {[...Array(6)].map((_, i) => <Skeleton key={i} className="w-full aspect-[2/3] rounded-xl bg-[#111]" />)}
+          </div>
+        )
       ) : movies && movies.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {movies.map((movie) => (
-            <div key={movie.id} className="w-full">
-              <MovieCard movie={{ ...movie, backdropPath: null, popularity: 0, genreIds: [], overview: "", releaseYear: movie.releaseYear ?? null, voteAverage: movie.voteAverage ?? 0 }} showRating={false} />
-            </div>
-          ))}
-        </div>
+        isWatchLater && watchedListId ? (
+          <div className="space-y-2">
+            {movies.map((movie) => (
+              <WatchLaterRow key={movie.id} movie={movie} watchlistId={watchlistId} watchedListId={watchedListId} />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {movies.map((movie) => (
+              <div key={movie.id} className="w-full">
+                <MovieCard movie={{ ...movie, backdropPath: null, popularity: 0, genreIds: [], overview: "", releaseYear: movie.releaseYear ?? null, voteAverage: movie.voteAverage ?? 0 }} showRating={false} />
+              </div>
+            ))}
+          </div>
+        )
       ) : (
         <div className="bg-[#0a0a0a] border border-gray-800 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center text-center">
           <LayoutGrid size={40} className="text-gray-700 mb-4" />
@@ -66,6 +276,8 @@ export default function Watchlists() {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [newListName, setNewListName] = useState("");
+
+  const watchedListId = watchlists?.find(l => l.name === "İzledim")?.id;
 
   const handleCreateList = () => {
     if (!newListName.trim()) return;
@@ -131,7 +343,13 @@ export default function Watchlists() {
       ) : watchlists ? (
         <div className="space-y-4">
           {watchlists.map(list => (
-            <WatchlistSection key={list.id} watchlistId={list.id} name={list.name} isDefault={list.isDefault} />
+            <WatchlistSection
+              key={list.id}
+              watchlistId={list.id}
+              name={list.name}
+              isDefault={list.isDefault}
+              watchedListId={watchedListId}
+            />
           ))}
         </div>
       ) : null}
