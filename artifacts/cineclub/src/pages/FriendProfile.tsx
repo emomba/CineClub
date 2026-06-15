@@ -124,7 +124,7 @@ export default function FriendProfile() {
             {commonWatched.length > 0 && (
               <div className="text-center bg-amber-500/10 px-4 py-3 rounded-xl border border-amber-500/30 min-w-[72px]">
                 <div className="text-2xl font-bold text-amber-400">{commonWatched.length}</div>
-                <div className="text-xs text-amber-600 font-medium uppercase tracking-wider">Ortak</div>
+                <div className="text-xs text-amber-600 font-medium uppercase tracking-wider">{t("common")}</div>
               </div>
             )}
           </div>

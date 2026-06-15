@@ -117,6 +117,10 @@ const translations = {
     optional: "opsiyonel",
     markWatched: "Film İzledim", confirmWatched: "İzledim!", markedWatched: "İzledim listesine eklendi!",
     comment: "Yorum", commentPlaceholder: "Filmle ilgili düşüncelerini yaz...",
+    filterAll: "Tümü", filterMovie: "Film", filterShort: "Kısa Film",
+    seen: "Görüldü", notYetSeen: "Henüz görülmedi",
+    switchAccount: "Farklı hesapla giriş yap", createAccount: "Yeni hesap oluştur",
+    common: "Ortak",
   },
   en: {
     home: "Home", search: "Search", watchlists: "Watchlists",
@@ -229,6 +233,10 @@ const translations = {
     sortYearDesc: "By Year (Newest)",
     sortYearAsc: "By Year (Oldest)",
     errorOccurred: "An error occurred, please try again.",
+    filterAll: "All", filterMovie: "Movie", filterShort: "Short Film",
+    seen: "Seen", notYetSeen: "Not yet seen",
+    switchAccount: "Sign in with another account", createAccount: "Create new account",
+    common: "Common",
   },
   de: {
     home: "Startseite", search: "Suche", watchlists: "Merklisten",
@@ -341,6 +349,10 @@ const translations = {
     sortYearDesc: "Nach Jahr (Neueste)",
     sortYearAsc: "Nach Jahr (Älteste)",
     errorOccurred: "Ein Fehler ist aufgetreten, bitte versuche es erneut.",
+    filterAll: "Alle", filterMovie: "Film", filterShort: "Kurzfilm",
+    seen: "Gesehen", notYetSeen: "Noch nicht gesehen",
+    switchAccount: "Mit anderem Konto anmelden", createAccount: "Neues Konto erstellen",
+    common: "Gemeinsam",
   },
   es: {
     home: "Inicio", search: "Buscar", watchlists: "Listas",
@@ -453,6 +465,10 @@ const translations = {
     sortYearDesc: "Por Año (Reciente)",
     sortYearAsc: "Por Año (Antiguo)",
     errorOccurred: "Ocurrió un error, por favor inténtalo de nuevo.",
+    filterAll: "Todos", filterMovie: "Película", filterShort: "Cortometraje",
+    seen: "Vista", notYetSeen: "No vista aún",
+    switchAccount: "Iniciar sesión con otra cuenta", createAccount: "Crear nueva cuenta",
+    common: "Común",
   },
   fr: {
     home: "Accueil", search: "Recherche", watchlists: "Listes",
@@ -565,6 +581,10 @@ const translations = {
     sortYearDesc: "Par Année (Récent)",
     sortYearAsc: "Par Année (Ancien)",
     errorOccurred: "Une erreur s'est produite, veuillez réessayer.",
+    filterAll: "Tous", filterMovie: "Film", filterShort: "Court métrage",
+    seen: "Vue", notYetSeen: "Pas encore vue",
+    switchAccount: "Se connecter avec un autre compte", createAccount: "Créer un nouveau compte",
+    common: "Commun",
   },
 };
 

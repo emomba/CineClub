@@ -96,14 +96,14 @@ export default function Landing() {
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-400 hover:bg-white/5 hover:text-white transition-colors"
                 >
                   <LogIn size={13} />
-                  <span>Farklı hesapla giriş yap</span>
+                  <span>{t("switchAccount")}</span>
                 </button>
                 <button
                   onClick={() => { setAccountOpen(false); setLocation("/register"); }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-400 hover:bg-white/5 hover:text-white transition-colors"
                 >
                   <UserPlus size={13} />
-                  <span>Yeni hesap oluştur</span>
+                  <span>{t("createAccount")}</span>
                 </button>
               </div>
             </div>

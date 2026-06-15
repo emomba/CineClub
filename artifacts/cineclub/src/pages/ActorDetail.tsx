@@ -1,4 +1,4 @@
-import { useParams, useLocation } from "wouter";
+import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { PageTransition } from "@/components/PageTransition";
 import { MovieCard } from "@/components/MovieCard";
@@ -15,8 +15,6 @@ export default function ActorDetail() {
   const { t } = useLang();
   const params = useParams<{ personId: string }>();
   const personId = Number(params.personId);
-  const [, setLocation] = useLocation();
-
   const { data: actor, isLoading } = useQuery<{
     id: number;
     name: string;
@@ -66,7 +64,7 @@ export default function ActorDetail() {
     <PageTransition className="pb-20">
       {/* Back button */}
       <button
-        onClick={() => setLocation(-1 as any)}
+        onClick={() => window.history.back()}
         className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-8 group"
       >
         <ChevronLeft size={20} className="group-hover:-translate-x-0.5 transition-transform" />

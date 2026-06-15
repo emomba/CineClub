@@ -207,9 +207,9 @@ export default function Recommendations() {
 
                     <div className="mt-auto pt-2 flex items-center gap-1.5">
                       {rec.seen ? (
-                        <span className="text-xs text-green-500 flex items-center gap-1"><Check size={12} /> Görüldü</span>
+                        <span className="text-xs text-green-500 flex items-center gap-1"><Check size={12} /> {t("seen")}</span>
                       ) : (
-                        <span className="text-xs text-gray-600">Henüz görülmedi</span>
+                        <span className="text-xs text-gray-600">{t("notYetSeen")}</span>
                       )}
                     </div>
                   </div>

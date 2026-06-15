@@ -7,7 +7,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { Search as SearchIcon, X, ArrowUpDown, Filter, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLang } from "@/lib/i18n";
+import { useLang, TranslationKeys } from "@/lib/i18n";
 
 function useLocalDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -171,7 +171,7 @@ export default function Search() {
                       : "text-gray-400 hover:text-white"
                   }`}
                 >
-                  {f === "all" ? "Tümü" : f === "movie" ? "Film" : "Kısa Film"}
+                  {f === "all" ? t("filterAll") : f === "movie" ? t("filterMovie") : t("filterShort")}
                 </button>
               ))}
             </div>
@@ -184,7 +184,7 @@ export default function Search() {
                   className="flex items-center gap-2 bg-[#111] border border-gray-800 text-gray-300 hover:text-white px-4 py-2 rounded-xl text-sm transition-all hover:border-amber-500/50"
                 >
                   <ArrowUpDown size={15} className="text-amber-500" />
-                  <span>{t(currentSortLabel as any)}</span>
+                  <span>{t(currentSortLabel as TranslationKeys)}</span>
                 </button>
                 {sortOpen && (
                   <div className="absolute right-0 top-full mt-1 bg-[#111] border border-gray-800 rounded-xl overflow-hidden shadow-xl z-50 min-w-[180px]">
@@ -198,7 +198,7 @@ export default function Search() {
                             : "text-gray-300 hover:bg-white/5 hover:text-white"
                         }`}
                       >
-                        {t(opt.labelKey as any)}
+                        {t(opt.labelKey as TranslationKeys)}
                       </button>
                     ))}
                   </div>
