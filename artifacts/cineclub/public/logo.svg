@@ -1,78 +1,70 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 112 90">
   <defs>
     <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#f59e0b"/>
       <stop offset="100%" stop-color="#ef4444"/>
     </linearGradient>
     <linearGradient id="gs" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#ef4444" stop-opacity="0.6"/>
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#ef4444" stop-opacity="0.5"/>
     </linearGradient>
-    <radialGradient id="lens" cx="35%" cy="32%" r="65%">
-      <stop offset="0%" stop-color="#1e1e1e"/>
+    <radialGradient id="lns" cx="35%" cy="32%" r="65%">
+      <stop offset="0%" stop-color="#222"/>
       <stop offset="100%" stop-color="#060606"/>
     </radialGradient>
-    <clipPath id="clp">
-      <rect x="60" y="28" width="34" height="12" rx="3"/>
+    <clipPath id="ca">
+      <rect x="63" y="26" width="48" height="10" rx="3"/>
+    </clipPath>
+    <clipPath id="cb">
+      <rect x="65" y="14" width="46" height="10" rx="3"/>
     </clipPath>
   </defs>
 
-  <!-- ═══ FILM CAMERA (left) ═══ -->
+  <!-- ▌FILM CAMERA — left zone x: 2-52 ▌ -->
 
-  <!-- Camera main body -->
-  <rect x="5" y="44" width="62" height="34" rx="7" fill="url(#g)"/>
+  <rect x="3"  y="36" width="49" height="32" rx="7" fill="url(#g)"/>
+  <rect x="7"  y="24" width="16" height="13" rx="5" fill="url(#g)"/>
+  <rect x="30" y="25" width="16" height="12" rx="4" fill="url(#g)"/>
 
-  <!-- Viewfinder scope (top-left of body) -->
-  <rect x="12" y="32" width="18" height="14" rx="4" fill="url(#g)"/>
+  <circle cx="25" cy="52" r="13"  fill="#0a0a0a"/>
+  <circle cx="25" cy="52" r="13"  fill="none" stroke="url(#gs)" stroke-width="1.8"/>
+  <circle cx="25" cy="52" r="8.8" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <circle cx="25" cy="52" r="7.6" fill="url(#lns)"/>
+  <circle cx="20" cy="47" r="2"   fill="white" opacity="0.13"/>
+  <circle cx="19" cy="46" r="0.9" fill="white" opacity="0.3"/>
 
-  <!-- Film magazine / top cartridge (top-right of body) -->
-  <rect x="40" y="33" width="20" height="13" rx="3" fill="url(#g)"/>
+  <!-- ▌CLAPPERBOARD — right zone x: 64-110 ▌ -->
 
-  <!-- Lens housing outer ring -->
-  <circle cx="28" cy="61" r="16" fill="#0c0c0c"/>
-  <circle cx="28" cy="61" r="16" fill="none" stroke="url(#gs)" stroke-width="2"/>
-
-  <!-- Lens inner ring suggestion -->
-  <circle cx="28" cy="61" r="11.5" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1.2"/>
-
-  <!-- Lens glass -->
-  <circle cx="28" cy="61" r="10" fill="url(#lens)"/>
-
-  <!-- Lens glint -->
-  <circle cx="22.5" cy="55.5" r="2.8" fill="white" opacity="0.13"/>
-  <circle cx="21.5" cy="54.5" r="1.2" fill="white" opacity="0.32"/>
-
-  <!-- ═══ CLAPPERBOARD (right, upper) — open position ═══ -->
-
-  <!-- Board body (dark with gradient stroke) -->
-  <rect x="62" y="42" width="33" height="36" rx="4" fill="#101010"/>
-  <rect x="62" y="42" width="33" height="36" rx="4" fill="none" stroke="url(#gs)" stroke-width="1.5"/>
+  <!-- Board body -->
+  <rect x="64" y="38" width="46" height="44" rx="5" fill="#101010"/>
+  <rect x="64" y="38" width="46" height="44" rx="5" fill="none" stroke="url(#gs)" stroke-width="1.5"/>
 
   <!-- Board info lines -->
-  <rect x="67" y="52" width="20" height="2.5" rx="1.2" fill="url(#gs)"/>
-  <rect x="67" y="59" width="14" height="2.5" rx="1.2" fill="url(#gs)" opacity="0.6"/>
-  <rect x="67" y="66" width="17" height="2.5" rx="1.2" fill="url(#gs)" opacity="0.6"/>
+  <rect x="71" y="49" width="28" height="2.5" rx="1.2" fill="url(#gs)"/>
+  <rect x="71" y="58" width="20" height="2.5" rx="1.2" fill="url(#gs)" opacity="0.55"/>
+  <rect x="71" y="67" width="24" height="2.5" rx="1.2" fill="url(#gs)" opacity="0.55"/>
 
-  <!-- Clapper lower bar (attached to board) -->
-  <rect x="60" y="37" width="36" height="7" rx="2.5" fill="url(#g)"/>
-  <!-- Diagonal stripes on lower bar -->
-  <g clip-path="url(#clp)">
-    <rect x="60" y="28" width="36" height="12" fill="url(#g)"/>
-    <polygon points="68,28 74,28 62,40 56,40" fill="#050505" opacity="0.45"/>
-    <polygon points="80,28 86,28 74,40 68,40" fill="#050505" opacity="0.45"/>
-    <polygon points="92,28 98,28 86,40 80,40" fill="#050505" opacity="0.45"/>
+  <!-- Lower clapper bar (attached to board top) -->
+  <rect x="63" y="28" width="48" height="10" rx="3.5" fill="url(#g)"/>
+  <g clip-path="url(#ca)">
+    <rect x="63" y="26" width="48" height="10" fill="url(#g)"/>
+    <polygon points="73,26 81,26  68,36  60,36" fill="#050505" opacity="0.42"/>
+    <polygon points="90,26 98,26  85,36  77,36" fill="#050505" opacity="0.42"/>
+    <polygon points="107,26 115,26 102,36  94,36" fill="#050505" opacity="0.42"/>
   </g>
 
-  <!-- Clapper upper arm (open / raised — rotated up) -->
-  <g transform="rotate(-22 62 37)">
-    <rect x="60" y="27" width="36" height="8" rx="2.5" fill="url(#g)"/>
-    <!-- Stripes on upper arm -->
-    <rect x="68" y="27" width="6" height="8" fill="#050505" opacity="0.4"/>
-    <rect x="80" y="27" width="6" height="8" fill="#050505" opacity="0.4"/>
-    <rect x="92" y="27" width="6" height="8" fill="#050505" opacity="0.4"/>
+  <!-- Upper clapper arm — open, pivots at hinge (65, 28) -->
+  <g transform="rotate(-20 65 28)">
+    <rect x="65" y="16" width="46" height="10" rx="3.5" fill="url(#g)"/>
+    <g clip-path="url(#cb)">
+      <rect x="65" y="14" width="46" height="10" fill="url(#g)"/>
+      <polygon points="74,14 82,14  69,24  61,24" fill="#050505" opacity="0.42"/>
+      <polygon points="91,14 99,14  86,24  78,24" fill="#050505" opacity="0.42"/>
+      <polygon points="108,14 116,14 103,24  95,24" fill="#050505" opacity="0.42"/>
+    </g>
   </g>
 
   <!-- Hinge pin -->
-  <circle cx="62" cy="37" r="2.8" fill="#050505"/>
-  <circle cx="62" cy="37" r="1.4" fill="url(#g)" opacity="0.9"/>
+  <circle cx="65" cy="28" r="3" fill="#050505"/>
+  <circle cx="65" cy="28" r="1.5" fill="url(#g)" opacity="0.9"/>
 </svg>
