@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
-import { getAuthToken, saveAccount } from "./auth-token";
+import { getAuthToken, saveAccount, saveTokenForAccount, getTokenForAccount, setAuthToken, setAuthUser, type SavedAccount } from "./auth-token";
 
 export interface AuthUser {
   id: string;
@@ -18,6 +18,7 @@ interface AuthContextType {
   signIn: (username: string, password: string) => Promise<void>;
   signUp: (username: string, password: string, displayName?: string) => Promise<void>;
   signOut: () => void;
+  restoreSession: (account: SavedAccount) => Promise<boolean>;
 }
 
 const TOKEN_KEY = "cc_auth_token";
@@ -80,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(u));
     saveAccount({ id: u.id, username: u.username, displayName: u.displayName, avatarUrl: u.avatarUrl });
+    saveTokenForAccount(u.id, token);
     flushSync(() => setUser(u));
   }, []);
 
@@ -97,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(u));
     saveAccount({ id: u.id, username: u.username, displayName: u.displayName, avatarUrl: u.avatarUrl });
+    saveTokenForAccount(u.id, token);
     flushSync(() => setUser(u));
   }, []);
 
@@ -104,6 +107,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     setUser(null);
+  }, []);
+
+  const restoreSession = useCallback(async (account: SavedAccount): Promise<boolean> => {
+    const token = getTokenForAccount(account.id);
+    if (!token) return false;
+    try {
+      const res = await fetch("/api/auth/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return false;
+      const u: AuthUser = await res.json();
+      setAuthToken(token);
+      setAuthUser(u);
+      saveTokenForAccount(u.id, token);
+      flushSync(() => setUser(u));
+      return true;
+    } catch {
+      return false;
+    }
   }, []);
 
   return (
@@ -115,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signUp,
         signOut,
+        restoreSession,
       }}
     >
       {children}

@@ -1,4 +1,5 @@
 const TOKEN_KEY = "cc_auth_token";
+const USER_KEY = "cc_auth_user";
 const SAVED_ACCOUNTS_KEY = "cc_saved_accounts_v2";
 const LOGIN_HINT_KEY = "cc_login_hint";
 
@@ -11,6 +12,22 @@ export interface SavedAccount {
 
 export function getAuthToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setAuthToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function setAuthUser(user: object): void {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+export function saveTokenForAccount(userId: string, token: string): void {
+  localStorage.setItem(`cc_token_${userId}`, token);
+}
+
+export function getTokenForAccount(userId: string): string | null {
+  return localStorage.getItem(`cc_token_${userId}`);
 }
 
 export function getSavedAccounts(): SavedAccount[] {
