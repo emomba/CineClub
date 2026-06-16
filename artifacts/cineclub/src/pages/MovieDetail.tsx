@@ -257,14 +257,14 @@ export default function MovieDetail() {
   const backdropUrl = getBackdropUrl(movie.backdropPath);
 
   return (
-    <PageTransition className="relative pb-20">
-      {/* Backdrop — absolute is relative to this PageTransition (which is now `relative`) */}
-      <div className="absolute -top-4 md:-top-8 -left-4 md:-left-8 -right-4 md:-right-8 h-[55vh] z-0 overflow-hidden pointer-events-none">
+    <PageTransition className="pb-20">
+      {/* Full-viewport backdrop — fixed so it always fills the screen edge to edge */}
+      <div className="fixed inset-x-0 top-0 h-[65vh] z-0 pointer-events-none">
         {backdropUrl && (
-          <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-25"
+          <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40"
             style={{ backgroundImage: `url(${backdropUrl})` }} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-[#050505]/70 to-[#050505]" />
       </div>
 
       <div className="relative z-10 pt-[20vh] md:pt-[28vh] flex flex-col md:flex-row gap-8 items-start">

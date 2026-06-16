@@ -59,7 +59,7 @@ export function Sidebar() {
   const currentLang = LANGS.find(l => l.code === lang) ?? LANGS[0];
 
   return (
-    <div className="w-64 bg-[#050505] border-r border-[#1a1a1a] h-[100dvh] sticky top-0 flex flex-col hidden md:flex">
+    <div className="w-64 bg-[#050505] border-r border-[#1a1a1a] h-[100dvh] sticky top-0 z-10 flex flex-col hidden md:flex">
       {/* Logo + lang */}
       <div className="p-5 flex items-center justify-between border-b border-[#1a1a1a]">
         <div className="flex items-center gap-3">

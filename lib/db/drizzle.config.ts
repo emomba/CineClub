@@ -1,17 +1,20 @@
 import { defineConfig } from "drizzle-kit";
 import path from "path";
 
-const dbUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
+const rawUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
 
-if (!dbUrl) {
+if (!rawUrl) {
   throw new Error("DATABASE_URL or SUPABASE_DATABASE_URL must be set");
 }
+
+const dbUrl = process.env.SUPABASE_DATABASE_URL
+  ? rawUrl.includes("sslmode")
+    ? rawUrl
+    : `${rawUrl}?uselibpqcompat=true&sslmode=require`
+  : rawUrl;
 
 export default defineConfig({
   schema: path.join(__dirname, "./src/schema/index.ts"),
   dialect: "postgresql",
-  dbCredentials: {
-    url: dbUrl,
-    ssl: process.env.SUPABASE_DATABASE_URL ? "require" : undefined,
-  },
+  dbCredentials: { url: dbUrl },
 });
