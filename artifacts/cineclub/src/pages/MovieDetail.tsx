@@ -257,16 +257,22 @@ export default function MovieDetail() {
   const backdropUrl = getBackdropUrl(movie.backdropPath);
 
   return (
-    <PageTransition className="pb-20">
-      {/* Full-viewport backdrop — fixed so it always fills the screen edge to edge */}
-      <div className="fixed inset-x-0 top-0 h-[65vh] z-0 pointer-events-none">
+    <>
+      {/* Backdrop — rendered OUTSIDE PageTransition so Framer Motion transforms don't affect fixed positioning */}
+      <div className="fixed inset-x-0 top-0 h-[70vh] z-0 pointer-events-none">
         {backdropUrl && (
-          <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40"
-            style={{ backgroundImage: `url(${backdropUrl})` }} />
+          <div
+            className="absolute inset-0 bg-cover bg-top bg-no-repeat"
+            style={{ backgroundImage: `url(${backdropUrl})`, opacity: 0.45 }}
+          />
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-[#050505]/70 to-[#050505]" />
+        {/* gradient: transparent top → heavy at bottom so content is readable */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#050505]/60 to-[#050505]" />
+        {/* side vignettes so backdrop doesn't feel cut off on wide screens */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#050505]/30 via-transparent to-[#050505]/30" />
       </div>
 
+      <PageTransition className="pb-20">
       <div className="relative z-10 pt-[20vh] md:pt-[28vh] flex flex-col md:flex-row gap-8 items-start">
         {/* Poster */}
         <div className="w-[200px] md:w-[300px] shrink-0 rounded-2xl overflow-hidden border-2 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
@@ -574,6 +580,7 @@ export default function MovieDetail() {
         </div>
       )}
 
-    </PageTransition>
+      </PageTransition>
+    </>
   );
 }
